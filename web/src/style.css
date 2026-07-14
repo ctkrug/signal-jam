@@ -1,0 +1,57 @@
+:root {
+  --bg: #0b0f0e;
+  --surface-1: #121917;
+  --surface-2: #1a2320;
+  --border: #2a3733;
+  --text: #e8f2ec;
+  --text-muted: #8fa39a;
+  --accent: #3dff9a;
+  --accent-dim: #1f8a58;
+  --accent-support: #ffb454;
+  --danger: #ff5d5d;
+
+  --font-display: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+  --font-ui: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+
+  --radius: 4px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top, var(--surface-1) 0%, var(--bg) 70%);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+#boot-status {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
