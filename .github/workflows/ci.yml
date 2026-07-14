@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            crate/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('crate/Cargo.lock') }}
+
+      - name: cargo fmt --check
+        run: cargo fmt --manifest-path crate/Cargo.toml -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --manifest-path crate/Cargo.toml --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --manifest-path crate/Cargo.toml
+
+  web:
+    name: Web (build, test, lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            crate/target
+          key: cargo-wasm-${{ runner.os }}-${{ hashFiles('crate/Cargo.lock') }}
+
+      - name: Install wasm-bindgen-cli
+        run: |
+          if ! command -v wasm-bindgen &> /dev/null; then
+            cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: npm ci
+        working-directory: web
+        run: npm ci
+
+      - name: Lint
+        working-directory: web
+        run: npm run lint
+
+      - name: Type-check + build
+        working-directory: web
+        run: npm run build
+
+      - name: Test
+        working-directory: web
+        run: npm test
