@@ -63,7 +63,7 @@ and loss states the weight the wow moment earned.
   - The readout goes to a neutral/blank state when the cursor is over
     empty noise with no emitter present.
 
-- [ ] **2.3 Win screen with stats and share text**
+- [x] **2.3 Win screen with stats and share text**
   - On lock, an overlay shows sweeps used and a copyable share string
     (emoji-grid style, Wordle-shaped) encoding the day number and sweep
     outcomes without revealing the day's answer.
