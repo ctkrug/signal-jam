@@ -56,3 +56,58 @@ impl Rng {
         lo + self.next_f64() * (hi - lo)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_seed_string_produces_identical_stream() {
+        let mut a = Rng::from_seed_str("2026-07-15");
+        let mut b = Rng::from_seed_str("2026-07-15");
+        for _ in 0..50 {
+            assert_eq!(a.next_u64(), b.next_u64());
+        }
+    }
+
+    #[test]
+    fn different_seed_strings_produce_different_streams() {
+        let mut a = Rng::from_seed_str("2026-07-15");
+        let mut b = Rng::from_seed_str("2026-07-16");
+        let seq_a: Vec<u64> = (0..10).map(|_| a.next_u64()).collect();
+        let seq_b: Vec<u64> = (0..10).map(|_| b.next_u64()).collect();
+        assert_ne!(seq_a, seq_b);
+    }
+
+    #[test]
+    fn next_f64_stays_in_unit_range_over_many_draws() {
+        let mut rng = Rng::from_seed_str("boundary-check");
+        for _ in 0..10_000 {
+            let v = rng.next_f64();
+            assert!((0.0..1.0).contains(&v), "value {v} escaped [0, 1)");
+        }
+    }
+
+    #[test]
+    fn next_range_respects_bounds_over_many_draws() {
+        let mut rng = Rng::from_seed_str("range-check");
+        for _ in 0..10_000 {
+            let v = rng.next_range(-3.0, 5.0);
+            assert!((-3.0..5.0).contains(&v), "value {v} escaped [-3, 5)");
+        }
+    }
+
+    #[test]
+    fn next_range_degenerate_bounds_returns_lo() {
+        let mut rng = Rng::from_seed_str("degenerate");
+        assert_eq!(rng.next_range(2.0, 2.0), 2.0);
+        assert_eq!(rng.next_range(5.0, 1.0), 5.0);
+    }
+
+    #[test]
+    fn empty_seed_string_is_deterministic_and_valid() {
+        let mut a = Rng::from_seed_str("");
+        let mut b = Rng::from_seed_str("");
+        assert_eq!(a.next_u64(), b.next_u64());
+    }
+}
