@@ -215,6 +215,19 @@ mod tests {
     }
 
     #[test]
+    fn frequency_exactly_at_tolerance_boundary_hits() {
+        // Distance exactly equal to LOCK_TOLERANCE must still lock — the
+        // window is inclusive (`<=`), not exclusive (`<`). Signal sits at
+        // 0.0 so `(frequency - signal).abs()` is `frequency` itself with
+        // no intervening rounding from an add-then-subtract round trip.
+        let mut engine = Engine::new(test_puzzle(0.0, &[], 3));
+        assert_eq!(
+            engine.sweep(LOCK_TOLERANCE),
+            SweepEvent::Locked { frequency: 0.0 }
+        );
+    }
+
+    #[test]
     fn puzzle_with_no_decoys_never_drains_budget_on_open_noise() {
         let mut engine = Engine::new(test_puzzle(0.5, &[], 4));
         for f in [0.1, 0.15, 0.2, 0.9] {
