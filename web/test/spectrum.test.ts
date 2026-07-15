@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeRowAmplitudes, emitterContribution, REVEAL_RADIUS } from "../src/spectrum";
+import { computeRowAmplitudes, emitterContribution, findHoveredEmitter, REVEAL_RADIUS } from "../src/spectrum";
 
 const noNoise = () => 0;
 
@@ -28,6 +28,47 @@ describe("emitterContribution", () => {
   it("forceFull ignores cursor distance entirely (locked signal)", () => {
     expect(emitterContribution(0.5, 0.5, 0.5, null, { forceFull: true })).toBeGreaterThan(0);
     expect(emitterContribution(0.5, 0.5, 0.5, 0.99, { forceFull: true })).toBeGreaterThan(0);
+  });
+});
+
+describe("findHoveredEmitter", () => {
+  const signal = { frequency: 0.5, dutyCycle: 0.6, noiseFloor: 0.3 };
+  const decoys = [
+    { frequency: 0.2, dutyCycle: 0.4, noiseFloor: 0.2 },
+    { frequency: 0.8, dutyCycle: 0.5, noiseFloor: 0.4 },
+  ];
+
+  it("returns null when the cursor hasn't swept yet", () => {
+    expect(findHoveredEmitter(null, signal, decoys)).toBeNull();
+  });
+
+  it("returns null over open noise, away from every emitter", () => {
+    expect(findHoveredEmitter(0.65, signal, decoys)).toBeNull();
+  });
+
+  it("finds the signal when the cursor sits on it", () => {
+    const hit = findHoveredEmitter(0.5, signal, decoys);
+    expect(hit).toEqual({ ...signal, isSignal: true });
+  });
+
+  it("finds a decoy when the cursor sits on it", () => {
+    const hit = findHoveredEmitter(0.79, signal, decoys);
+    expect(hit).toEqual({ ...decoys[1], isSignal: false });
+  });
+
+  it("prefers the nearest emitter when two are both in range", () => {
+    const farSignal = { ...signal, frequency: 0.9 };
+    const tight = [
+      { frequency: 0.48, dutyCycle: 0.1, noiseFloor: 0.1 },
+      { frequency: 0.53, dutyCycle: 0.9, noiseFloor: 0.9 },
+    ];
+    const hit = findHoveredEmitter(0.502, farSignal, tight, 0.05);
+    expect(hit?.frequency).toBe(0.48);
+  });
+
+  it("respects a custom revealRadius", () => {
+    expect(findHoveredEmitter(0.5, signal, decoys, 0)).toEqual({ ...signal, isSignal: true });
+    expect(findHoveredEmitter(0.51, signal, decoys, 0)).toBeNull();
   });
 });
 
