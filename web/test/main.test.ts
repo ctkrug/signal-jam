@@ -89,6 +89,7 @@ const APP_SHELL = `
     <div class="overlay-card">
       <h2 id="overlay-title"></h2>
       <p id="overlay-body"></p>
+      <button id="overlay-share" class="secondary-button" type="button" hidden></button>
       <button id="overlay-action" class="primary-button" type="button"></button>
     </div>
   </div>
