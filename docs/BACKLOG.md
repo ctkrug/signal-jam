@@ -118,7 +118,7 @@ Makes it a *daily* habit instead of a one-off toy.
     requests (verified by serving `dist/` locally under a subpath and
     inspecting network requests).
 
-- [ ] **4.4 CI green end-to-end**
+- [x] **4.4 CI green end-to-end**
   - GitHub Actions CI passes `cargo fmt --check`, `cargo clippy -D
     warnings`, `cargo test`, and the web build/lint/test suite on a
     clean clone of `main`.
