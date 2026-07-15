@@ -76,6 +76,8 @@ const APP_SHELL = `
       <div class="readout-row">
         <div class="readout"><span class="readout-value" id="sweeps-value">–</span></div>
         <div class="readout"><span class="readout-value" id="freq-value">– – –</span></div>
+        <div class="readout"><span class="readout-value" id="duty-value">– –</span></div>
+        <div class="readout"><span class="readout-value" id="noise-value">– –</span></div>
         <button id="mute-button" class="icon-button" type="button" aria-pressed="false">
           <span class="icon-speaker"></span>
         </button>
