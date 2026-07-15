@@ -15,7 +15,7 @@ mod puzzle;
 mod rng;
 
 use engine::{Engine, SweepEvent};
-use puzzle::{Emitter, Puzzle};
+use puzzle::{Decoy, Emitter, Property, Puzzle};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,13 +37,49 @@ impl From<&Emitter> for EmitterJson {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+enum PropertyJson {
+    DutyCycle,
+    NoiseFloor,
+}
+
+impl From<Property> for PropertyJson {
+    fn from(p: Property) -> Self {
+        match p {
+            Property::DutyCycle => PropertyJson::DutyCycle,
+            Property::NoiseFloor => PropertyJson::NoiseFloor,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DecoyJson {
+    frequency: f64,
+    duty_cycle: f64,
+    noise_floor: f64,
+    mismatch: PropertyJson,
+}
+
+impl From<&Decoy> for DecoyJson {
+    fn from(d: &Decoy) -> Self {
+        DecoyJson {
+            frequency: d.emitter.frequency,
+            duty_cycle: d.emitter.duty_cycle,
+            noise_floor: d.emitter.noise_floor,
+            mismatch: d.mismatch.into(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct PuzzleInfoJson {
     date: String,
     sweep_budget: u32,
     lock_tolerance: f64,
     decoy_tolerance: f64,
     signal: EmitterJson,
-    decoys: Vec<EmitterJson>,
+    decoys: Vec<DecoyJson>,
 }
 
 impl From<&Puzzle> for PuzzleInfoJson {
