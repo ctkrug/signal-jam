@@ -206,6 +206,39 @@ describe("bootstrap", () => {
     expect(document.getElementById("sweep-cursor")?.classList.contains("hit-decoy")).toBe(true);
   });
 
+  it("running out of sweeps reveals the signal, hides share, and starts a countdown", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Re-cross the decoy 3 more times (the fake session re-charges on every
+    // hit, unlike the real engine) to drain the sweep budget to zero.
+    for (let i = 0; i < 3; i++) {
+      track.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 180, pointerId: 1, bubbles: true }),
+      );
+      track.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 40, pointerId: 1, bubbles: true }),
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("overlay-title")?.textContent).toBe("OUT OF SWEEPS");
+    expect(document.getElementById("overlay-share")?.hidden).toBe(true);
+
+    const countdownEl = document.getElementById("overlay-countdown");
+    expect(countdownEl?.hidden).toBe(false);
+    expect(countdownEl?.textContent).toMatch(/^Next puzzle in \d{2}:\d{2}:\d{2}$/);
+
+    document.getElementById("overlay-action")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(document.getElementById("overlay-countdown")?.hidden).toBe(true);
+  });
+
   it("hitting a decoy reveals its mismatch property as a hint chip, once", async () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
