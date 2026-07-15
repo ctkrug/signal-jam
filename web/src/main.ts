@@ -147,6 +147,7 @@ async function bootstrap(): Promise<void> {
   const overlayTitleEl = requireElement<HTMLElement>("overlay-title");
   const overlayBodyEl = requireElement<HTMLElement>("overlay-body");
   const overlayActionEl = requireElement<HTMLButtonElement>("overlay-action");
+  const overlayShareEl = requireElement<HTMLButtonElement>("overlay-share");
 
   const announce = (message: string): void => {
     statusLiveEl.textContent = message;
@@ -180,14 +181,32 @@ async function bootstrap(): Promise<void> {
       body: string;
       actionLabel: string;
       lossVariant: boolean;
+      shareText?: string;
     }): void => {
       overlayTitleEl.textContent = opts.title;
       overlayTitleEl.classList.toggle("loss", opts.lossVariant);
       overlayBodyEl.textContent = opts.body;
       overlayActionEl.textContent = opts.actionLabel;
+      overlayShareEl.hidden = opts.shareText === undefined;
+      overlayShareEl.textContent = "Copy result";
       overlayEl.hidden = false;
       overlayActionEl.focus();
+
+      if (opts.shareText !== undefined) {
+        const shareText = opts.shareText;
+        overlayShareEl.onclick = () => {
+          void copyToClipboard(shareText).then((copied) => {
+            if (!copied) return;
+            overlayShareEl.textContent = "Copied!";
+            window.setTimeout(() => {
+              overlayShareEl.textContent = "Copy result";
+            }, 2000);
+          });
+        };
+      }
     };
+
+    const sweepOutcomes: SweepOutcome[] = [];
 
     const revealedHints = new Set<number>();
 
@@ -206,6 +225,7 @@ async function bootstrap(): Promise<void> {
     };
 
     const onDecoyHit = (index: number): void => {
+      sweepOutcomes.push("decoy");
       cursorEl.classList.add("hit-decoy");
       chassisEl?.classList.add("shake");
       sfx.decoyBump();
@@ -217,6 +237,7 @@ async function bootstrap(): Promise<void> {
 
     const onLocked = (): void => {
       resultShown = true;
+      sweepOutcomes.push("lock");
       cursorEl.classList.remove("hit-decoy");
       cursorEl.classList.add("locked");
       waterfall.markLocked();
@@ -229,6 +250,7 @@ async function bootstrap(): Promise<void> {
         lossVariant: false,
         body: `You locked the signal using ${used} of ${info.sweepBudget} sweeps.`,
         actionLabel: "Nice.",
+        shareText: buildShareText(dayNumber(date), sweepOutcomes, info.sweepBudget),
       });
     };
 
