@@ -55,7 +55,7 @@ and loss states the weight the wow moment earned.
   - Revealed hints accumulate across the session — a later hit doesn't
     overwrite or hide an earlier revealed hint.
 
-- [ ] **2.2 Frequency / duty-cycle / noise-floor readout**
+- [x] **2.2 Frequency / duty-cycle / noise-floor readout**
   - A live readout shows the cursor's current frequency and the duty
     cycle/noise floor of whatever emitter (real or decoy) it is
     currently over, updating within one animation frame of cursor
