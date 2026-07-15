@@ -54,6 +54,52 @@ export function dayNumber(utcDateString: string): number {
   return Math.max(1, Math.round((ms - LAUNCH_DATE_UTC_MS) / MS_PER_DAY) + 1);
 }
 
+export type SweepOutcome = "decoy" | "lock";
+
+/**
+ * Builds a Wordle-shaped share string: one square per sweep event in
+ * order (🟧 decoy, 🟩 lock), padded with ⬛ up to the sweep budget plus
+ * the winning square, then a numeric summary line. Never encodes the
+ * signal's actual frequency or duty cycle/noise floor — only outcomes.
+ */
+export function buildShareText(day: number, outcomes: SweepOutcome[], sweepBudget: number): string {
+  const squares = outcomes.map((o) => (o === "decoy" ? "🟧" : "🟩")).join("");
+  const totalSlots = sweepBudget + 1;
+  const padding = "⬛".repeat(Math.max(0, totalSlots - outcomes.length));
+  const used = outcomes.filter((o) => o === "decoy").length;
+  return `Signal Jam Day ${day}\n${squares}${padding}\n${used}/${sweepBudget} sweeps`;
+}
+
+/**
+ * Writes `text` to the clipboard, preferring the async Clipboard API and
+ * falling back to a legacy `execCommand("copy")` off-screen textarea for
+ * environments without it. Resolves `false` (never throws) on failure.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the legacy fallback below.
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return copied;
+  } catch {
+    return false;
+  }
+}
+
 /** Renders a normalized [0,1] frequency as a flavorful "dial" reading. */
 export function formatFrequencyReadout(frequency: number | null): string {
   if (frequency === null) return "– – –";
