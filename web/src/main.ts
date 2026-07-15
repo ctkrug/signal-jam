@@ -2,6 +2,7 @@ import init, { PuzzleSession } from "./wasm/signal_jam_core.js";
 import { getUtcDateString } from "./date";
 import { Waterfall } from "./waterfall";
 import { SfxPlayer } from "./audio";
+import { findHoveredEmitter } from "./spectrum";
 
 /** Day 1 of the puzzle calendar; the day counter is days since this date. */
 const LAUNCH_DATE_UTC_MS = Date.UTC(2026, 6, 15);
@@ -60,6 +61,12 @@ export function formatFrequencyReadout(frequency: number | null): string {
   return `${mhz.toFixed(2)} MHz`;
 }
 
+/** Renders a [0,1] property value as a "%" readout, or a blank state for null. */
+export function formatPercentReadout(value: number | null): string {
+  if (value === null) return "– –";
+  return `${Math.round(value * 100)}%`;
+}
+
 /** Maps a pointer's clientX onto a normalized [0,1] frequency for `trackRect`. */
 export function frequencyFromPosition(trackRect: { left: number; width: number }, clientX: number): number {
   if (trackRect.width <= 0) return 0;
@@ -86,6 +93,8 @@ async function bootstrap(): Promise<void> {
   const hintsListEl = requireElement<HTMLElement>("hints-list");
   const sweepsValueEl = requireElement<HTMLElement>("sweeps-value");
   const freqValueEl = requireElement<HTMLElement>("freq-value");
+  const dutyValueEl = requireElement<HTMLElement>("duty-value");
+  const noiseValueEl = requireElement<HTMLElement>("noise-value");
   const muteButtonEl = requireElement<HTMLButtonElement>("mute-button");
   const statusLiveEl = requireElement<HTMLElement>("status-live");
   const overlayEl = requireElement<HTMLElement>("result-overlay");
@@ -109,6 +118,8 @@ async function bootstrap(): Promise<void> {
     dayCounterEl.textContent = `DAY ${dayNumber(date)}`;
     sweepsValueEl.textContent = String(info.sweepBudget);
     freqValueEl.textContent = formatFrequencyReadout(null);
+    dutyValueEl.textContent = formatPercentReadout(null);
+    noiseValueEl.textContent = formatPercentReadout(null);
     muteButtonEl.setAttribute("aria-pressed", String(sfx.isMuted));
 
     let cursorFrequency: number | null = null;
@@ -270,6 +281,11 @@ async function bootstrap(): Promise<void> {
         signal: { frequency: info.signal.frequency, dutyCycle: info.signal.dutyCycle },
         decoys: info.decoys.map((d) => ({ frequency: d.frequency, dutyCycle: d.dutyCycle })),
       });
+
+      const hovered = findHoveredEmitter(cursorFrequency, info.signal, info.decoys);
+      dutyValueEl.textContent = formatPercentReadout(hovered?.dutyCycle ?? null);
+      noiseValueEl.textContent = formatPercentReadout(hovered?.noiseFloor ?? null);
+
       requestAnimationFrame(frameLoop);
     };
     requestAnimationFrame(frameLoop);
