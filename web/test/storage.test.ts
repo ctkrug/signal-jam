@@ -122,6 +122,24 @@ describe("loadResult / saveResult", () => {
     expect(loadResult("2026-07-15")).toBeNull();
   });
 
+  it("treats valid JSON that isn't an object at the top level as no history", () => {
+    for (const raw of ["42", "null", '"just a string"', "[1,2,3]"]) {
+      localStorage.setItem("signal-jam:results", raw);
+      expect(() => loadResult("2026-07-15")).not.toThrow();
+      expect(loadResult("2026-07-15")).toBeNull();
+    }
+  });
+
+  it("discards a per-date entry that's valid JSON but not an object", () => {
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({ "2026-07-15": "garbage", "2026-07-16": null, "2026-07-17": 42 }),
+    );
+    expect(loadResult("2026-07-15")).toBeNull();
+    expect(loadResult("2026-07-16")).toBeNull();
+    expect(loadResult("2026-07-17")).toBeNull();
+  });
+
   it("degrades gracefully when localStorage.setItem throws", () => {
     const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new DOMException("quota exceeded");
