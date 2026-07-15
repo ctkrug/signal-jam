@@ -6,6 +6,7 @@
 
 use wasm_bindgen::prelude::*;
 
+mod engine;
 mod puzzle;
 mod rng;
 
