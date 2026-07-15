@@ -692,6 +692,84 @@ body {
   transform: scale(0.96);
 }
 
+.page-info {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent 200px);
+}
+
+.page-info-inner {
+  max-width: 68ch;
+  margin: 0 auto;
+}
+
+.page-info h2 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.page-info h2:first-child {
+  margin-top: 0;
+}
+
+.page-info p {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.faq {
+  margin: 0;
+}
+
+.faq dt {
+  margin-top: var(--space-2);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.faq dd {
+  margin: 4px 0 var(--space-1);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.page-info a,
+.footer-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(61, 255, 154, 0.35);
+  transition: border-color 160ms var(--ease-out);
+}
+
+.page-info a:hover,
+.footer-link:hover {
+  border-bottom-color: var(--accent);
+}
+
+.view-source {
+  margin-top: var(--space-3);
+}
+
+.page-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.footer-sep {
+  color: var(--border);
+}
+
 @media (max-width: 600px) {
   .console-header {
     padding: var(--space-2) var(--space-2) var(--space-1);

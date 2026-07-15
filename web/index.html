@@ -3,11 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Signal Jam — daily spectrum puzzle</title>
+    <title>Signal Jam — a daily spectrum puzzle for your browser</title>
     <meta
       name="description"
-      content="Sweep a spectrum analyzer to find the hidden signal before your sweeps run out. A new puzzle every day."
+      content="A daily puzzle game in the browser: a Wordle-style spectrum puzzle where you sweep to find the hidden signal before your sweeps run out."
     />
+    <meta property="og:title" content="Signal Jam — a daily spectrum puzzle for your browser" />
+    <meta
+      property="og:description"
+      content="A Wordle-style daily puzzle game in the browser. Sweep the spectrum, find the hidden signal, share your grid. Free, no login, new puzzle every day."
+    />
+    <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="./src/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -38,7 +44,7 @@
 
         <div class="hints-panel" id="hints-panel" aria-label="Revealed clues">
           <span class="hints-label">Clues</span>
-          <p class="hints-empty" id="hints-empty">No decoys hit yet — cross one to reveal a clue.</p>
+          <p class="hints-empty" id="hints-empty">No decoys hit yet. Cross one to reveal a clue.</p>
           <ul class="hints-list" id="hints-list"></ul>
         </div>
 
@@ -101,6 +107,78 @@
         </div>
       </div>
     </div>
+
+    <section class="page-info" aria-labelledby="about-heading">
+      <div class="page-info-inner">
+        <h2 id="about-heading">A daily puzzle game you play in the browser</h2>
+        <p>
+          Signal Jam is a free daily puzzle game that runs entirely in your
+          browser, with no login and nothing to download. Each day there is one
+          new puzzle: a single hidden radio signal buried in a band of noise
+          alongside five decoys doing their best to look like it. You sweep a
+          spectrum analyzer across the band, read the clue each decoy leaves
+          behind, and try to lock onto the real signal before your four sweeps
+          run out. Everyone plays the same board on the same day.
+        </p>
+
+        <h2>How the spectrum puzzle works</h2>
+        <p>
+          Every emitter on the band has three properties: a frequency, a duty
+          cycle, and a noise floor. Decoys copy some of the real signal's
+          properties but never all of them. Cross a decoy and it costs you a
+          sweep, but it also reveals the one property that gives it away, so the
+          round is deduction rather than blind guessing. Cross the real signal
+          and it flares, snaps to its exact frequency, and chimes. Win or lose,
+          you get a Wordle-style result grid that shows how the round went without
+          revealing the day's answer, so you can share it without spoilers.
+        </p>
+
+        <h2>Frequently asked questions</h2>
+        <dl class="faq">
+          <dt>Is Signal Jam a daily puzzle game I can play in the browser?</dt>
+          <dd>
+            Yes. It is a browser puzzle game with a new puzzle every day. Nothing
+            to install and no account to create: open the page and start sweeping.
+          </dd>
+          <dt>How is this a Wordle-style spectrum puzzle?</dt>
+          <dd>
+            Like Wordle, everyone gets the same puzzle each day, you have a limited
+            number of guesses, and you share a spoiler-free emoji grid of your
+            result. The twist is that your guesses are sweeps across a spectrum
+            analyzer, and the feedback is a live waterfall display instead of
+            colored letters.
+          </dd>
+          <dt>Do I need to know anything about radios or spectrum analyzers?</dt>
+          <dd>
+            No. The puzzle teaches its own three properties (frequency, duty cycle,
+            and noise floor) as you play, the same way Wordle teaches its color
+            feedback. Prior radio knowledge is not required.
+          </dd>
+          <dt>Is there a new puzzle every day?</dt>
+          <dd>
+            Yes. The board is generated from the date, so a fresh signal, decoy
+            set, and sweep budget arrive every day at midnight UTC, and there is a
+            countdown to the next one once you finish.
+          </dd>
+          <dt>Does it cost anything or need an account?</dt>
+          <dd>
+            No. Signal Jam is free, has no accounts, and has no backend. Your
+            streak and daily result are stored only in your own browser.
+          </dd>
+        </dl>
+
+        <p class="view-source">
+          <a href="https://github.com/ctkrug/signal-jam">View the source on GitHub</a>
+        </p>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <a class="footer-link" href="https://github.com/ctkrug/signal-jam">GitHub</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a class="footer-link" href="https://apps.charliekrug.com">More by Charlie Krug → apps.charliekrug.com</a>
+    </footer>
+
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
