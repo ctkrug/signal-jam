@@ -90,3 +90,85 @@ fn place_frequency(rng: &mut Rng, existing: &[f64]) -> f64 {
     }
     candidate
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn all_emitters(puzzle: &Puzzle) -> Vec<&Emitter> {
+        let mut all = vec![&puzzle.signal];
+        all.extend(puzzle.decoys.iter());
+        all
+    }
+
+    #[test]
+    fn same_date_produces_identical_puzzle() {
+        let a = Puzzle::generate("2026-07-15");
+        let b = Puzzle::generate("2026-07-15");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn puzzle_has_expected_decoy_count_and_budget() {
+        let puzzle = Puzzle::generate("2026-07-15");
+        assert_eq!(puzzle.decoys.len(), DECOY_COUNT);
+        assert_eq!(puzzle.sweep_budget, DECOY_COUNT as u32 + 3);
+    }
+
+    #[test]
+    fn most_consecutive_dates_produce_different_signal_frequencies() {
+        let dates: Vec<String> = (1..=100).map(|day| format!("2026-{day:04}")).collect();
+        let frequencies: Vec<f64> = dates
+            .iter()
+            .map(|d| Puzzle::generate(d).signal.frequency)
+            .collect();
+
+        let differing = frequencies.windows(2).filter(|w| w[0] != w[1]).count();
+        assert!(
+            differing >= 95,
+            "expected >=95/99 consecutive dates to differ, got {differing}"
+        );
+    }
+
+    #[test]
+    fn all_emitters_stay_within_band_and_property_ranges() {
+        for day in 1..=200 {
+            let date = format!("2026-{day:04}");
+            let puzzle = Puzzle::generate(&date);
+            for emitter in all_emitters(&puzzle) {
+                assert!(
+                    (MIN_FREQUENCY..=MAX_FREQUENCY).contains(&emitter.frequency),
+                    "frequency {} escaped band on {date}",
+                    emitter.frequency
+                );
+                assert!((0.2..=0.9).contains(&emitter.duty_cycle));
+                assert!((0.1..=0.6).contains(&emitter.noise_floor));
+            }
+        }
+    }
+
+    #[test]
+    fn emitters_never_overlap_within_min_spacing() {
+        for day in 1..=200 {
+            let date = format!("2026-{day:04}");
+            let puzzle = Puzzle::generate(&date);
+            let emitters = all_emitters(&puzzle);
+            for i in 0..emitters.len() {
+                for j in (i + 1)..emitters.len() {
+                    let gap = (emitters[i].frequency - emitters[j].frequency).abs();
+                    assert!(
+                        gap >= MIN_SPACING - f64::EPSILON,
+                        "emitters {i} and {j} overlap on {date}: gap {gap}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn empty_date_string_still_generates_a_valid_puzzle() {
+        let puzzle = Puzzle::generate("");
+        assert_eq!(puzzle.decoys.len(), DECOY_COUNT);
+        assert!((MIN_FREQUENCY..=MAX_FREQUENCY).contains(&puzzle.signal.frequency));
+    }
+}
