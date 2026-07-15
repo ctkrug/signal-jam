@@ -111,3 +111,41 @@ mod tests {
         assert_eq!(a.next_u64(), b.next_u64());
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::Rng;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Any seed string at all — empty, unicode, huge, whitespace,
+        /// control characters — must produce a deterministic, in-range
+        /// stream. This is the boundary a date string crosses before
+        /// `Puzzle::generate` ever sees it.
+        #[test]
+        fn any_seed_string_is_deterministic_and_bounded(s in ".{0,200}") {
+            let mut a = Rng::from_seed_str(&s);
+            let mut b = Rng::from_seed_str(&s);
+            for _ in 0..20 {
+                let (va, vb) = (a.next_f64(), b.next_f64());
+                prop_assert_eq!(va, vb);
+                prop_assert!((0.0..1.0).contains(&va));
+            }
+        }
+
+        #[test]
+        fn next_range_never_escapes_arbitrary_bounds(
+            seed in ".{0,64}",
+            lo in -1_000.0f64..1_000.0,
+            hi in -1_000.0f64..1_000.0,
+        ) {
+            let mut rng = Rng::from_seed_str(&seed);
+            let v = rng.next_range(lo, hi);
+            if hi <= lo {
+                prop_assert_eq!(v, lo);
+            } else {
+                prop_assert!(v >= lo && v < hi);
+            }
+        }
+    }
+}
