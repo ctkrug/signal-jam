@@ -18,6 +18,7 @@ use engine::{Engine, SweepEvent};
 use puzzle::{Emitter, Puzzle};
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct EmitterJson {
     frequency: f64,
     duty_cycle: f64,
@@ -35,6 +36,7 @@ impl From<&Emitter> for EmitterJson {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct PuzzleInfoJson {
     date: String,
     sweep_budget: u32,
@@ -58,7 +60,7 @@ impl From<&Puzzle> for PuzzleInfoJson {
 }
 
 #[derive(Serialize)]
-#[serde(tag = "kind")]
+#[serde(tag = "kind", rename_all = "camelCase")]
 enum SweepEventJson {
     None,
     DecoyHit { index: usize },
