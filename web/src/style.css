@@ -182,6 +182,7 @@ body {
 
 .waterfall-frame {
   position: relative;
+  display: flex;
   min-height: 65vh;
   border-radius: var(--radius);
   overflow: hidden;
@@ -193,7 +194,10 @@ body {
 #waterfall {
   display: block;
   width: 100%;
-  height: 100%;
+  /* A percentage height wouldn't resolve here since .waterfall-frame's
+     own height comes from min-height inside a flex column, not an
+     explicit length — flex: 1 fills the frame regardless. */
+  flex: 1;
 }
 
 .scanline-overlay {
