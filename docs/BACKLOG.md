@@ -88,7 +88,7 @@ Makes it a *daily* habit instead of a one-off toy.
     follows the previous UTC day's win, and resets to 1 after a gap or a
     loss.
 
-- [ ] **3.2 Mute toggle persistence**
+- [x] **3.2 Mute toggle persistence**
   - Toggling mute updates a `localStorage` flag; reloading the page
     preserves the mute state and suppresses all SFX while muted.
 
