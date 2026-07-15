@@ -4,5 +4,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["test/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/wasm/**", "src/wasm-module.d.ts"],
+    },
   },
 });
