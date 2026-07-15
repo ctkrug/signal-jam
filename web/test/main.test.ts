@@ -385,6 +385,99 @@ describe("bootstrap", () => {
     expect(document.getElementById("overlay-countdown")?.hidden).toBe(true);
   });
 
+  it("Escape dismisses a visible overlay", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.getElementById("result-overlay")?.hidden).toBe(true);
+  });
+
+  it("Escape is inert while no overlay is showing", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(() =>
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+    ).not.toThrow();
+    expect(document.getElementById("result-overlay")?.hidden).toBe(true);
+  });
+
+  it("arrow keys, Home, and End move the sweep cursor via aria-valuenow", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
+    expect(track.getAttribute("aria-valuenow")).toBe("100");
+
+    track.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true, cancelable: true }));
+    expect(track.getAttribute("aria-valuenow")).toBe("0");
+
+    track.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }),
+    );
+    expect(track.getAttribute("aria-valuenow")).toBe("1");
+
+    track.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }),
+    );
+    expect(track.getAttribute("aria-valuenow")).toBe("0");
+  });
+
+  it("an unrecognized key on the sweep track is a no-op", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(new KeyboardEvent("keydown", { key: "q", bubbles: true, cancelable: true }));
+    expect(track.getAttribute("aria-valuenow")).toBe("0");
+    expect(document.getElementById("freq-value")?.textContent).toBe("– – –");
+  });
+
+  it("releasing the pointer (pointerup) stops drag tracking", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1, bubbles: true }));
+
+    const valueAfterRelease = track.getAttribute("aria-valuenow");
+    // A pointermove after release must not update the cursor — dragging
+    // stopped when the pointer was released.
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 180, pointerId: 1, bubbles: true }),
+    );
+    expect(track.getAttribute("aria-valuenow")).toBe(valueAfterRelease);
+  });
+
+  it("pointercancel also stops drag tracking", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    track.dispatchEvent(new PointerEvent("pointercancel", { pointerId: 1, bubbles: true }));
+
+    const valueAfterCancel = track.getAttribute("aria-valuenow");
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 180, pointerId: 1, bubbles: true }),
+    );
+    expect(track.getAttribute("aria-valuenow")).toBe(valueAfterCancel);
+  });
+
   it("hitting a decoy reveals its mismatch property as a hint chip, once", async () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
