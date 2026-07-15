@@ -33,7 +33,15 @@ body {
 
 body {
   margin: 0;
-  background: radial-gradient(ellipse at top, var(--surface-1) 0%, var(--bg) 70%);
+  background:
+    radial-gradient(ellipse at top, var(--surface-1) 0%, var(--bg) 60%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
   color: var(--text);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
@@ -42,16 +50,131 @@ body {
 #app {
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
+  flex-direction: column;
 }
 
-#boot-status {
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+
+.wordmark-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  box-shadow: 0 0 6px rgba(61, 255, 154, 0.4);
+  animation: led-blink 2.4s ease-in-out infinite;
+}
+
+.led.won {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(61, 255, 154, 0.85);
+  animation: none;
+}
+
+@keyframes led-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.wordmark {
+  position: relative;
+  margin: 0;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 19px;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.08em;
+  color: var(--text);
   text-transform: uppercase;
+}
+
+.day-counter {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.chassis {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  margin: 0 var(--space-4) var(--space-4);
+  padding: var(--space-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 2);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(61, 255, 154, 0.06);
+}
+
+.chassis::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image:
+    radial-gradient(circle, var(--border) 0 1.5px, transparent 1.6px),
+    radial-gradient(circle, var(--border) 0 1.5px, transparent 1.6px),
+    radial-gradient(circle, var(--border) 0 1.5px, transparent 1.6px),
+    radial-gradient(circle, var(--border) 0 1.5px, transparent 1.6px);
+  background-repeat: no-repeat;
+  background-position:
+    10px 10px,
+    calc(100% - 10px) 10px,
+    10px calc(100% - 10px),
+    calc(100% - 10px) calc(100% - 10px);
+}
+
+.waterfall-frame {
+  position: relative;
+  min-height: 65vh;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #060908;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.65);
+}
+
+#waterfall {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
 }
