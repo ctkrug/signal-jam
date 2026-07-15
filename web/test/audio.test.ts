@@ -182,4 +182,48 @@ describe("SfxPlayer with a WebAudio implementation available", () => {
     player.decoyBump();
     expect(ctx.resume).toHaveBeenCalled();
   });
+
+  it("flareLock wires the rising sweep oscillator plus two chime tones", () => {
+    const player = new SfxPlayer();
+    player.flareLock();
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    // The sweep oscillator plus tone()'s two bell tones = 3 oscillators.
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(3);
+  });
+
+  it("loseTone wires a single descending oscillator", () => {
+    const player = new SfxPlayer();
+    player.loseTone();
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(1);
+    const osc = ctx.createOscillator.mock.results[0]?.value as FakeOscillator;
+    expect(osc.type).toBe("sawtooth");
+    expect(osc.start).toHaveBeenCalled();
+    expect(osc.stop).toHaveBeenCalled();
+  });
+
+  it("degrades to silence instead of throwing when the AudioContext constructor itself throws", () => {
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        constructor() {
+          throw new DOMException("blocked by permissions policy");
+        }
+      },
+    );
+    const player = new SfxPlayer();
+    expect(() => player.flareLock()).not.toThrow();
+    expect((player as unknown as { ctx: unknown }).ctx).toBeNull();
+  });
+});
+
+describe("SfxPlayer mute preference read failures", () => {
+  it("defaults to unmuted instead of throwing when localStorage.getItem throws", () => {
+    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("SecurityError");
+    });
+    expect(() => new SfxPlayer()).not.toThrow();
+    expect(new SfxPlayer().isMuted).toBe(false);
+    spy.mockRestore();
+  });
 });
