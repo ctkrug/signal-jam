@@ -19,12 +19,31 @@ export interface DailyResult {
 
 type ResultsByDate = Record<string, DailyResult>;
 
+/** Guards against a hand-edited or stale-schema entry reaching the app. */
+function isDailyResult(value: unknown): value is DailyResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    typeof r.won === "boolean" &&
+    typeof r.sweepsUsed === "number" &&
+    typeof r.sweepBudget === "number" &&
+    typeof r.streak === "number" &&
+    Array.isArray(r.outcomes) &&
+    r.outcomes.every((o) => o === "decoy" || o === "lock")
+  );
+}
+
 function readResults(): ResultsByDate {
   try {
     const raw = localStorage.getItem(RESULTS_KEY);
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null ? (parsed as ResultsByDate) : {};
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const results: ResultsByDate = {};
+    for (const [date, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (isDailyResult(value)) results[date] = value;
+    }
+    return results;
   } catch {
     // Malformed JSON or storage unavailable — treat as no history.
     return {};

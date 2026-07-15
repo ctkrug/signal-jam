@@ -218,10 +218,12 @@ describe("bootstrap", () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+    // A record this malformed can't be trusted to replay — bootstrap
+    // discards it and starts a fresh puzzle rather than crashing.
+    expect(document.getElementById("result-overlay")?.hidden).toBe(true);
+    expect(document.getElementById("sweep-track")?.getAttribute("aria-disabled")).toBe(null);
 
-    // Bootstrap must finish wiring input handlers despite the corrupt
-    // record — the mute button still has to respond.
+    // And every control must still be wired up — no wedged UI.
     const muteButton = document.getElementById("mute-button")!;
     muteButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 0));

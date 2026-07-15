@@ -113,4 +113,40 @@ describe("loadResult / saveResult", () => {
     expect(() => saveResult("2026-07-15", result())).not.toThrow();
     spy.mockRestore();
   });
+
+  it("discards a hand-edited entry missing required fields instead of returning a partial object", () => {
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({ "2026-07-15": { won: true, streak: 2 } }),
+    );
+    expect(loadResult("2026-07-15")).toBeNull();
+  });
+
+  it("discards an entry whose outcomes contain a value outside the known set", () => {
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({
+        "2026-07-15": {
+          won: true,
+          sweepsUsed: 1,
+          sweepBudget: 4,
+          streak: 1,
+          outcomes: ["decoy", "banana"],
+        },
+      }),
+    );
+    expect(loadResult("2026-07-15")).toBeNull();
+  });
+
+  it("keeps a well-formed entry alongside a discarded malformed one", () => {
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({
+        "2026-07-14": { won: true, streak: "not a number" },
+        "2026-07-15": result({ streak: 5 }),
+      }),
+    );
+    expect(loadResult("2026-07-14")).toBeNull();
+    expect(loadResult("2026-07-15")?.streak).toBe(5);
+  });
 });
