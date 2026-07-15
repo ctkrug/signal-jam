@@ -14,7 +14,7 @@ class FakePuzzleSession {
       lockTolerance: 0.012,
       decoyTolerance: 0.015,
       signal: { frequency: 0.5, dutyCycle: 0.5, noiseFloor: 0.5 },
-      decoys: [{ frequency: 0.2, dutyCycle: 0.5, noiseFloor: 0.5 }],
+      decoys: [{ frequency: 0.2, dutyCycle: 0.5, noiseFloor: 0.5, mismatch: "dutyCycle" }],
     });
   }
 
@@ -64,6 +64,10 @@ const APP_SHELL = `
   <main class="chassis">
     <div class="waterfall-frame">
       <canvas id="waterfall"></canvas>
+    </div>
+    <div class="hints-panel" id="hints-panel">
+      <p class="hints-empty" id="hints-empty"></p>
+      <ul class="hints-list" id="hints-list"></ul>
     </div>
     <section class="control-strip">
       <div id="sweep-track" class="sweep-track" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -158,6 +162,30 @@ describe("bootstrap", () => {
     expect(document.getElementById("sweeps-value")?.textContent).toBe("3");
     expect(document.getElementById("sweep-cursor")?.classList.contains("hit-decoy")).toBe(true);
   });
+
+  it("hitting a decoy reveals its mismatch property as a hint chip, once", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // Re-cross the same already-spent decoy — must not duplicate the hint.
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 180, pointerId: 1, bubbles: true }),
+    );
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const chips = document.querySelectorAll("#hints-list .hint-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]?.textContent).toContain("duty cycle");
+    expect(document.getElementById("hints-panel")?.classList.contains("has-hints")).toBe(true);
+  });
 });
 
 describe("pure helpers", () => {
@@ -173,6 +201,12 @@ describe("pure helpers", () => {
     expect(formatFrequencyReadout(null)).toBe("– – –");
     expect(formatFrequencyReadout(0)).toBe("88.00 MHz");
     expect(formatFrequencyReadout(1)).toBe("108.00 MHz");
+  });
+
+  it("formatHint labels the decoy number and its mismatched property", async () => {
+    const { formatHint } = await import("../src/main.ts");
+    expect(formatHint(1, "dutyCycle")).toBe("DECOY 1 — duty cycle doesn't match");
+    expect(formatHint(3, "noiseFloor")).toBe("DECOY 3 — noise floor doesn't match");
   });
 
   it("frequencyFromPosition clamps to [0, 1] and handles a zero-width track", async () => {
