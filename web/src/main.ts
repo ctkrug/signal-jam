@@ -153,13 +153,16 @@ async function bootstrap(): Promise<void> {
     };
 
     const updateFrequency = (frequency: number): void => {
+      // Once the puzzle has ended, freeze the cursor exactly where it
+      // is (locked on the signal, or wherever it ran out of sweeps)
+      // rather than letting further drag/keyboard input drift it.
+      if (resultShown) return;
+
       cursorFrequency = frequency;
       cursorEl.style.left = `${frequency * 100}%`;
       sweepTrackEl.setAttribute("aria-valuenow", String(Math.round(frequency * 100)));
       freqValueEl.textContent = formatFrequencyReadout(frequency);
       sfx.sweepTick(frequency);
-
-      if (resultShown) return;
 
       const event = JSON.parse(session.sweep(frequency)) as SweepEventJson;
       sweepsValueEl.textContent = String(session.sweepsRemaining());
@@ -171,6 +174,11 @@ async function bootstrap(): Promise<void> {
           if (session.isExhausted()) onExhausted();
           break;
         case "locked":
+          // Snap the cursor to the signal's exact frequency rather than
+          // wherever inside the lock tolerance the pointer happened to be.
+          cursorFrequency = event.frequency;
+          cursorEl.style.left = `${event.frequency * 100}%`;
+          freqValueEl.textContent = formatFrequencyReadout(event.frequency);
           onLocked();
           break;
         case "exhausted":
