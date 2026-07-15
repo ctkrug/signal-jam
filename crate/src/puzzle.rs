@@ -334,3 +334,50 @@ mod tests {
         assert!(seen_duty && seen_noise);
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// The date string is untrusted input from `getUtcDateString()` in
+        /// normal operation, but nothing here actually enforces that shape
+        /// — so any string thrown at it (empty, unicode, huge, control
+        /// characters) must still generate a structurally valid puzzle
+        /// rather than panicking or escaping its invariants.
+        #[test]
+        fn arbitrary_date_strings_never_break_puzzle_invariants(date in ".{0,300}") {
+            let puzzle = Puzzle::generate(&date);
+
+            prop_assert_eq!(puzzle.decoys.len(), DECOY_COUNT);
+            prop_assert_eq!(puzzle.sweep_budget, DECOY_COUNT as u32 - 1);
+
+            let mut all = vec![&puzzle.signal];
+            all.extend(puzzle.decoys.iter().map(|d| &d.emitter));
+
+            for emitter in &all {
+                prop_assert!((MIN_FREQUENCY..=MAX_FREQUENCY).contains(&emitter.frequency));
+                prop_assert!((DUTY_CYCLE_RANGE.0..=DUTY_CYCLE_RANGE.1).contains(&emitter.duty_cycle));
+                prop_assert!((NOISE_FLOOR_RANGE.0..=NOISE_FLOOR_RANGE.1).contains(&emitter.noise_floor));
+            }
+
+            for i in 0..all.len() {
+                for j in (i + 1)..all.len() {
+                    let gap = (all[i].frequency - all[j].frequency).abs();
+                    prop_assert!(gap >= MIN_SPACING - f64::EPSILON);
+                }
+            }
+        }
+
+        /// The same arbitrary date string generates byte-identical puzzles
+        /// on repeated calls — determinism must hold for any input, not
+        /// just well-formed calendar dates.
+        #[test]
+        fn arbitrary_date_strings_are_deterministic(date in ".{0,300}") {
+            let a = Puzzle::generate(&date);
+            let b = Puzzle::generate(&date);
+            prop_assert_eq!(a, b);
+        }
+    }
+}
