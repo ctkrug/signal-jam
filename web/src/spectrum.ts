@@ -42,7 +42,7 @@ function proximityFactor(
   cursorFrequency: number | null,
   revealRadius: number,
 ): number {
-  if (cursorFrequency === null) return 0;
+  if (cursorFrequency === null || !Number.isFinite(cursorFrequency)) return 0;
   const distance = Math.abs(emitterFrequency - cursorFrequency);
   if (distance > revealRadius) return 0;
   return 1 - distance / revealRadius;
