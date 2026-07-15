@@ -47,10 +47,25 @@ natural fit for a tight, replayable 2-minute session.
 - No backend, no database, no accounts — everything ships as a static
   site (see `docs/VISION.md` for the deployment shape)
 
+## Development
+
+```
+cd web
+npm install
+npm run dev       # builds the wasm core, then starts a dev server
+npm test          # vitest
+npm run lint
+npm run build      # static build into web/dist/, subpath-relative
+```
+
+See `docs/ARCHITECTURE.md` for the module map and data flow, and
+`cd crate && cargo test` for the Rust core's own test suite.
+
 ## Status
 
-Early scaffold. See `docs/VISION.md` for the design and `docs/BACKLOG.md`
-for the build plan.
+The core sweep loop is playable: deterministic daily puzzle, live
+waterfall, decoy feedback, and the flare/lock/chime win moment. See
+`docs/VISION.md` for the design and `docs/BACKLOG.md` for what's left.
 
 ## License
 
