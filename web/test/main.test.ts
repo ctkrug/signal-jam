@@ -159,3 +159,30 @@ describe("bootstrap", () => {
     expect(document.getElementById("sweep-cursor")?.classList.contains("hit-decoy")).toBe(true);
   });
 });
+
+describe("pure helpers", () => {
+  it("dayNumber counts up from the launch date, never below 1", async () => {
+    const { dayNumber } = await import("../src/main.ts");
+    expect(dayNumber("2026-07-15")).toBe(1);
+    expect(dayNumber("2026-07-16")).toBe(2);
+    expect(dayNumber("2020-01-01")).toBe(1); // before launch clamps to day 1
+  });
+
+  it("formatFrequencyReadout renders a placeholder for null and a reading otherwise", async () => {
+    const { formatFrequencyReadout } = await import("../src/main.ts");
+    expect(formatFrequencyReadout(null)).toBe("– – –");
+    expect(formatFrequencyReadout(0)).toBe("88.00 MHz");
+    expect(formatFrequencyReadout(1)).toBe("108.00 MHz");
+  });
+
+  it("frequencyFromPosition clamps to [0, 1] and handles a zero-width track", async () => {
+    const { frequencyFromPosition } = await import("../src/main.ts");
+    const rect = { left: 100, width: 200 };
+    expect(frequencyFromPosition(rect, 100)).toBe(0);
+    expect(frequencyFromPosition(rect, 300)).toBe(1);
+    expect(frequencyFromPosition(rect, 200)).toBe(0.5);
+    expect(frequencyFromPosition(rect, -50)).toBe(0); // before the track, clamps
+    expect(frequencyFromPosition(rect, 1000)).toBe(1); // past the track, clamps
+    expect(frequencyFromPosition({ left: 0, width: 0 }, 50)).toBe(0);
+  });
+});
