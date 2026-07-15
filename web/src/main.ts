@@ -3,6 +3,15 @@ import { formatCountdown, getUtcDateString, msUntilNextUtcDay } from "./date";
 import { Waterfall } from "./waterfall";
 import { SfxPlayer } from "./audio";
 import { findHoveredEmitter } from "./spectrum";
+import {
+  activeStreak,
+  loadResult,
+  nextStreak,
+  previousUtcDateString,
+  saveResult,
+  type DailyResult,
+  type SweepOutcome,
+} from "./storage";
 
 /** Day 1 of the puzzle calendar; the day counter is days since this date. */
 const LAUNCH_DATE_UTC_MS = Date.UTC(2026, 6, 15);
@@ -53,8 +62,6 @@ export function dayNumber(utcDateString: string): number {
   if (Number.isNaN(ms)) return 1;
   return Math.max(1, Math.round((ms - LAUNCH_DATE_UTC_MS) / MS_PER_DAY) + 1);
 }
-
-export type SweepOutcome = "decoy" | "lock";
 
 /**
  * Builds a Wordle-shaped share string: one square per sweep event in
@@ -130,6 +137,7 @@ function requireElement<T extends HTMLElement>(id: string): T {
 
 async function bootstrap(): Promise<void> {
   const dayCounterEl = requireElement<HTMLElement>("day-counter");
+  const streakCounterEl = requireElement<HTMLElement>("streak-counter");
   const ledEl = requireElement<HTMLElement>("win-led");
   const canvasEl = requireElement<HTMLCanvasElement>("waterfall");
   const chassisEl = document.querySelector<HTMLElement>(".chassis");
@@ -163,7 +171,16 @@ async function bootstrap(): Promise<void> {
     const waterfall = new Waterfall(canvasEl);
     const sfx = new SfxPlayer();
 
+    const yesterdayResult = loadResult(previousUtcDateString(date));
+    const todayResult = loadResult(date);
+
+    const updateStreakBadge = (streak: number): void => {
+      streakCounterEl.hidden = streak <= 0;
+      streakCounterEl.textContent = `STREAK ${streak}`;
+    };
+
     dayCounterEl.textContent = `DAY ${dayNumber(date)}`;
+    updateStreakBadge(activeStreak(todayResult, yesterdayResult));
     sweepsValueEl.textContent = String(info.sweepBudget);
     freqValueEl.textContent = formatFrequencyReadout(null);
     dutyValueEl.textContent = formatPercentReadout(null);
@@ -272,6 +289,15 @@ async function bootstrap(): Promise<void> {
       sfx.flareLock();
       ledEl.classList.add("won");
       const used = info.sweepBudget - session.sweepsRemaining();
+      const streak = nextStreak(yesterdayResult, true);
+      saveResult(date, {
+        won: true,
+        sweepsUsed: used,
+        sweepBudget: info.sweepBudget,
+        outcomes: sweepOutcomes,
+        streak,
+      });
+      updateStreakBadge(streak);
       announce("Signal locked.");
       showOverlay({
         title: "SIGNAL LOCKED",
@@ -286,6 +312,15 @@ async function bootstrap(): Promise<void> {
       resultShown = true;
       waterfall.reveal();
       sfx.loseTone();
+      const streak = nextStreak(yesterdayResult, false);
+      saveResult(date, {
+        won: false,
+        sweepsUsed: info.sweepBudget - session.sweepsRemaining(),
+        sweepBudget: info.sweepBudget,
+        outcomes: sweepOutcomes,
+        streak,
+      });
+      updateStreakBadge(streak);
       announce("Out of sweeps. Signal not found.");
       showOverlay({
         title: "OUT OF SWEEPS",
@@ -294,6 +329,39 @@ async function bootstrap(): Promise<void> {
         actionLabel: "Close",
         showCountdown: true,
       });
+    };
+
+    /** Reconstructs today's already-completed result on a same-day reload. */
+    const restoreCompletedResult = (result: DailyResult): void => {
+      resultShown = true;
+      cursorFrequency = info.signal.frequency;
+      cursorEl.style.left = `${info.signal.frequency * 100}%`;
+      cursorEl.classList.add(result.won ? "locked" : "hit-decoy");
+      freqValueEl.textContent = formatFrequencyReadout(info.signal.frequency);
+      sweepsValueEl.textContent = String(result.sweepBudget - result.sweepsUsed);
+      sweepTrackEl.setAttribute("aria-disabled", "true");
+      waterfall.reveal();
+
+      if (result.won) {
+        ledEl.classList.add("won");
+        announce("You already locked today's signal.");
+        showOverlay({
+          title: "SIGNAL LOCKED",
+          lossVariant: false,
+          body: `You locked the signal using ${result.sweepsUsed} of ${result.sweepBudget} sweeps.`,
+          actionLabel: "Nice.",
+          shareText: buildShareText(dayNumber(date), result.outcomes, result.sweepBudget),
+        });
+      } else {
+        announce("You already ran out of sweeps today.");
+        showOverlay({
+          title: "OUT OF SWEEPS",
+          lossVariant: true,
+          body: `The signal was at ${formatFrequencyReadout(info.signal.frequency)}.`,
+          actionLabel: "Close",
+          showCountdown: true,
+        });
+      }
     };
 
     const updateFrequency = (frequency: number): void => {
@@ -332,6 +400,10 @@ async function bootstrap(): Promise<void> {
           break;
       }
     };
+
+    if (todayResult) {
+      restoreCompletedResult(todayResult);
+    }
 
     let dragging = false;
     sweepTrackEl.addEventListener("pointerdown", (e) => {
