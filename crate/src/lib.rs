@@ -6,6 +6,7 @@
 
 use wasm_bindgen::prelude::*;
 
+mod puzzle;
 mod rng;
 
 /// Confirms the WASM module loaded and can be called from JS.
