@@ -19,7 +19,66 @@
   </head>
   <body>
     <div id="app">
-      <p id="boot-status">loading…</p>
+      <header class="console-header">
+        <div class="wordmark-wrap">
+          <span class="led" id="win-led" aria-hidden="true"></span>
+          <h1 class="wordmark" data-text="SIGNAL JAM">SIGNAL JAM</h1>
+        </div>
+        <div class="day-counter" id="day-counter">DAY —</div>
+      </header>
+
+      <main class="chassis">
+        <div class="waterfall-frame">
+          <canvas id="waterfall" aria-label="Spectrum waterfall display, sweep across it to search for the hidden signal"></canvas>
+          <div class="scanline-overlay" aria-hidden="true"></div>
+        </div>
+
+        <section class="control-strip" aria-label="Sweep controls">
+          <div
+            id="sweep-track"
+            class="sweep-track"
+            role="slider"
+            aria-label="Sweep frequency"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-valuetext="not yet swept"
+            tabindex="0"
+          >
+            <div class="sweep-cursor" id="sweep-cursor"></div>
+          </div>
+
+          <div class="readout-row">
+            <div class="readout" id="sweeps-readout">
+              <span class="readout-label">Sweeps</span>
+              <span class="readout-value" id="sweeps-value">–</span>
+            </div>
+            <div class="readout" id="freq-readout">
+              <span class="readout-label">Freq</span>
+              <span class="readout-value" id="freq-value">– – –</span>
+            </div>
+            <button
+              id="mute-button"
+              class="icon-button"
+              type="button"
+              aria-label="Mute sound effects"
+              aria-pressed="false"
+            >
+              <span class="icon-speaker" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <p id="status-live" class="sr-only" role="status" aria-live="polite"></p>
+
+      <div class="overlay" id="result-overlay" hidden>
+        <div class="overlay-card">
+          <h2 id="overlay-title"></h2>
+          <p id="overlay-body"></p>
+          <button id="overlay-action" class="primary-button" type="button"></button>
+        </div>
+      </div>
     </div>
     <script type="module" src="./src/main.ts"></script>
   </body>
