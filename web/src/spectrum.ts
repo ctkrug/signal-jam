@@ -66,6 +66,48 @@ export function emitterContribution(
   return shape * peak * proximity;
 }
 
+export interface EmitterReadout {
+  frequency: number;
+  dutyCycle: number;
+  noiseFloor: number;
+}
+
+export interface HoveredEmitter extends EmitterReadout {
+  isSignal: boolean;
+}
+
+/**
+ * Finds whichever emitter (the real signal or a decoy) the cursor is
+ * currently "over" — within `revealRadius`, same as what the waterfall
+ * visually reveals — preferring the nearest one if more than one is in
+ * range. Returns `null` when the cursor is over open noise (or hasn't
+ * swept yet), the neutral state for the live readout.
+ */
+export function findHoveredEmitter(
+  cursorFrequency: number | null,
+  signal: EmitterReadout,
+  decoys: EmitterReadout[],
+  revealRadius: number = REVEAL_RADIUS,
+): HoveredEmitter | null {
+  if (cursorFrequency === null) return null;
+
+  const candidates: HoveredEmitter[] = [
+    { ...signal, isSignal: true },
+    ...decoys.map((d) => ({ ...d, isSignal: false })),
+  ];
+
+  let nearest: HoveredEmitter | null = null;
+  let nearestDistance = Infinity;
+  for (const candidate of candidates) {
+    const distance = Math.abs(candidate.frequency - cursorFrequency);
+    if (distance <= revealRadius && distance < nearestDistance) {
+      nearest = candidate;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
+}
+
 /**
  * Computes one row's per-bin amplitudes. `ambientNoise` supplies the
  * flicker baseline for each bin (real random noise in production, a
