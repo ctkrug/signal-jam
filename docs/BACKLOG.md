@@ -70,7 +70,7 @@ and loss states the weight the wow moment earned.
   - Clicking "copy" places the share text on the clipboard and shows a
     brief confirmation state (e.g. button label changes for ~2s).
 
-- [ ] **2.4 Loss screen with reveal**
+- [x] **2.4 Loss screen with reveal**
   - On loss (sweeps exhausted), an overlay reveals the real signal's
     exact frequency on the waterfall.
   - The overlay shows a "come back tomorrow" message with a live
