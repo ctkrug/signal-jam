@@ -35,6 +35,9 @@ pub struct Puzzle {
     pub date: String,
     pub signal: Emitter,
     pub decoys: Vec<Emitter>,
+    /// Sweeps allowed before a loss. Deliberately fewer than `decoys.len()`
+    /// so hitting every decoy is a reachable, losable outcome rather than a
+    /// budget the player can never exhaust.
     pub sweep_budget: u32,
 }
 
@@ -60,7 +63,7 @@ impl Puzzle {
             date: date.to_string(),
             signal,
             decoys,
-            sweep_budget: DECOY_COUNT as u32 + 3,
+            sweep_budget: DECOY_COUNT as u32 - 1,
         }
     }
 }
@@ -112,7 +115,7 @@ mod tests {
     fn puzzle_has_expected_decoy_count_and_budget() {
         let puzzle = Puzzle::generate("2026-07-15");
         assert_eq!(puzzle.decoys.len(), DECOY_COUNT);
-        assert_eq!(puzzle.sweep_budget, DECOY_COUNT as u32 + 3);
+        assert_eq!(puzzle.sweep_budget, DECOY_COUNT as u32 - 1);
     }
 
     #[test]
