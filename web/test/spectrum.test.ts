@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fc from "fast-check";
 import { computeRowAmplitudes, emitterContribution, findHoveredEmitter, REVEAL_RADIUS } from "../src/spectrum";
 
 const noNoise = () => 0;
@@ -159,5 +160,73 @@ describe("computeRowAmplitudes", () => {
     for (const v of [...green, ...amber]) {
       expect(Number.isNaN(v)).toBe(false);
     }
+  });
+});
+
+describe("spectrum property tests", () => {
+  const emitter = fc.record({
+    frequency: fc.double({ min: 0, max: 1, noNaN: true }),
+    dutyCycle: fc.double({ min: 0, max: 1, noNaN: true }),
+  });
+  const readout = fc.record({
+    frequency: fc.double({ min: 0, max: 1, noNaN: true }),
+    dutyCycle: fc.double({ min: 0, max: 1, noNaN: true }),
+    noiseFloor: fc.double({ min: 0, max: 1, noNaN: true }),
+  });
+  const cursor = fc.option(fc.double({ min: -1, max: 2, noNaN: true }), { nil: null });
+
+  it("computeRowAmplitudes always stays within [0, 1] regardless of inputs", () => {
+    fc.assert(
+      fc.property(
+        cursor,
+        emitter,
+        fc.array(emitter, { maxLength: 6 }),
+        fc.boolean(),
+        fc.integer({ min: 1, max: 200 }),
+        (cursorFrequency, signal, decoys, locked, binCount) => {
+          const { green, amber } = computeRowAmplitudes(
+            { cursorFrequency, signal, decoys, locked, binCount },
+            () => 0,
+          );
+          for (const v of [...green, ...amber]) {
+            expect(Number.isFinite(v)).toBe(true);
+            expect(v).toBeGreaterThanOrEqual(0);
+            expect(v).toBeLessThanOrEqual(1);
+          }
+        },
+      ),
+    );
+  });
+
+  it("emitterContribution is never negative and never exceeds 1", () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: 0, max: 1, noNaN: true }),
+        emitter,
+        cursor,
+        (binFrequency, e, cursorFrequency) => {
+          const v = emitterContribution(binFrequency, e.frequency, e.dutyCycle, cursorFrequency);
+          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBeLessThanOrEqual(1);
+        },
+      ),
+    );
+  });
+
+  it("findHoveredEmitter only ever returns an emitter within revealRadius", () => {
+    fc.assert(
+      fc.property(
+        cursor,
+        readout,
+        fc.array(readout, { maxLength: 6 }),
+        (cursorFrequency, signal, decoys) => {
+          const hit = findHoveredEmitter(cursorFrequency, signal, decoys);
+          if (hit !== null) {
+            expect(cursorFrequency).not.toBeNull();
+            expect(Math.abs(hit.frequency - (cursorFrequency as number))).toBeLessThanOrEqual(REVEAL_RADIUS);
+          }
+        },
+      ),
+    );
   });
 });
