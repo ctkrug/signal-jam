@@ -101,18 +101,18 @@ Makes it a *daily* habit instead of a one-off toy.
 
 ## Epic 4 — Ship readiness
 
-- [ ] **4.1 Responsive layout across breakpoints**
+- [x] **4.1 Responsive layout across breakpoints**
   - Page renders with no horizontal scroll and no overlapping elements
     at 390px, 768px, and 1440px, matching `docs/DESIGN.md`'s layout
     intent at each.
 
-- [ ] **4.2 Accessibility pass**
+- [x] **4.2 Accessibility pass**
   - All interactive controls are reachable and operable via keyboard
     (Tab, then Enter/Space) with a visible focus ring.
   - Icon-only buttons (mute, close) carry `aria-label` text, and sweep
     status changes are announced through an `aria-live` region.
 
-- [ ] **4.3 Static build verified for subpath hosting**
+- [x] **4.3 Static build verified for subpath hosting**
   - `npm run build` produces a `web/dist/` directory that, served from a
     non-root path (e.g. `/signal-jam/`), loads with zero broken asset
     requests (verified by serving `dist/` locally under a subpath and
