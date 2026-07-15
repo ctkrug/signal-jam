@@ -153,8 +153,8 @@ body {
 }
 
 .streak-counter {
-  color: var(--accent-support);
-  border-color: rgba(255, 180, 84, 0.35);
+  color: var(--accent);
+  border-color: rgba(61, 255, 154, 0.35);
 }
 
 .streak-counter[hidden] {
