@@ -249,3 +249,48 @@ mod tests {
         assert!(!engine.is_exhausted());
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use crate::puzzle::Puzzle;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Feeds an Engine an arbitrary sequence of cursor frequencies —
+        /// including values outside [0, 1], the range real input is
+        /// clamped to before it ever reaches here — and checks the
+        /// invariants the whole game depends on hold no matter the
+        /// sequence: the budget never goes negative (a u32 underflow
+        /// would panic in debug builds) or increases, a lock is
+        /// permanent once reached, and Ignored is only ever reported
+        /// once locked.
+        #[test]
+        fn arbitrary_sweep_sequences_never_break_invariants(
+            date in ".{0,40}",
+            frequencies in prop::collection::vec(-0.5f64..1.5, 1..80),
+        ) {
+            let puzzle = Puzzle::generate(&date);
+            let mut engine = Engine::new(puzzle);
+            let mut previous_remaining = engine.sweeps_remaining();
+            let mut saw_lock = false;
+
+            for frequency in frequencies {
+                let event = engine.sweep(frequency);
+
+                prop_assert!(engine.sweeps_remaining() <= previous_remaining);
+                previous_remaining = engine.sweeps_remaining();
+
+                match event {
+                    SweepEvent::Locked { .. } => saw_lock = true,
+                    SweepEvent::Ignored => prop_assert!(saw_lock || engine.is_locked()),
+                    _ => {}
+                }
+
+                if saw_lock {
+                    prop_assert!(engine.is_locked());
+                }
+            }
+        }
+    }
+}
