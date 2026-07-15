@@ -273,6 +273,57 @@ describe("bootstrap", () => {
     expect(shareButton.textContent).toBe("Copied!");
   });
 
+  it("clicking the share button twice in a row only ever shows one confirmation", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const shareButton = document.getElementById("overlay-share") as HTMLButtonElement;
+    // Rapid double-click before the first copy's promise resolves.
+    shareButton.click();
+    shareButton.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(writeText).toHaveBeenCalledTimes(2);
+    expect(shareButton.textContent).toBe("Copied!");
+  });
+
+  it("a storage event from another tab completing the puzzle doesn't crash the session", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // main.ts doesn't subscribe to storage events by design (no live
+    // cross-tab sync), but dispatching one must still be inert rather
+    // than throwing and wedging the page.
+    expect(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "signal-jam:results",
+          newValue: JSON.stringify({ [getUtcDateString()]: { won: true } }),
+        }),
+      );
+    }).not.toThrow();
+
+    // The in-progress session must still respond to input afterward.
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+  });
+
   it("hitting a decoy without winning keeps the share button hidden", async () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
