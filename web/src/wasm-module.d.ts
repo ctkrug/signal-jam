@@ -4,5 +4,14 @@ declare module "./wasm/signal_jam_core.js" {
   export default function init(
     module_or_path?: RequestInfo | URL | Response | BufferSource | WebAssembly.Module,
   ): Promise<void>;
-  export function greet(): string;
+
+  export class PuzzleSession {
+    constructor(date: string);
+    puzzleInfo(): string;
+    sweep(frequency: number): string;
+    isLocked(): boolean;
+    isExhausted(): boolean;
+    sweepsRemaining(): number;
+    free(): void;
+  }
 }
