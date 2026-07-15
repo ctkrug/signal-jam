@@ -66,9 +66,10 @@ page in every layout.
 
 - **Desktop 1440×900:** waterfall canvas occupies the top ~65vh, full
   width inside a chassis frame with a thin bezel; below it a control strip
-  (sweep slider/dial, lock button, sweeps-remaining readout, mute) spans
-  the width. A slim header bar (wordmark + streak/day counter) sits above
-  the canvas, never competing with it for space.
+  (sweep drag strip, sweeps-remaining readout, mute) spans the width —
+  locking is automatic on crossing the real signal, so there is no manual
+  lock button. A slim header bar (wordmark + streak/day counter) sits
+  above the canvas, never competing with it for space.
 - **Mobile 390×844:** canvas keeps ~55vh (still the dominant element),
   header collapses to a compact bar, controls stack below as large
   touch-friendly (≥44px) targets — the sweep control becomes a horizontal
