@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getUtcDateString } from "../src/date";
 
 class FakePuzzleSession {
   private locked = false;
@@ -151,6 +152,58 @@ describe("bootstrap", () => {
     expect(document.getElementById("result-overlay")?.hidden).toBe(false);
     expect(document.getElementById("overlay-title")?.textContent).toBe("SIGNAL LOCKED");
     expect(document.getElementById("win-led")?.classList.contains("won")).toBe(true);
+  });
+
+  it("locking the signal persists today's result and shows a streak badge", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const stored = JSON.parse(localStorage.getItem("signal-jam:results") ?? "{}");
+    const today = getUtcDateString();
+    expect(stored[today]).toMatchObject({ won: true, sweepsUsed: 0, streak: 1 });
+
+    const streakEl = document.getElementById("streak-counter");
+    expect(streakEl?.hidden).toBe(false);
+    expect(streakEl?.textContent).toBe("STREAK 1");
+  });
+
+  it("reloading after already completing today's puzzle restores the result screen", async () => {
+    const today = getUtcDateString();
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({
+        [today]: {
+          won: true,
+          sweepsUsed: 2,
+          sweepBudget: 4,
+          outcomes: ["decoy", "decoy", "lock"],
+          streak: 3,
+        },
+      }),
+    );
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+    expect(document.getElementById("overlay-title")?.textContent).toBe("SIGNAL LOCKED");
+    expect(document.getElementById("overlay-body")?.textContent).toContain("2 of 4 sweeps");
+    expect(document.getElementById("sweep-track")?.getAttribute("aria-disabled")).toBe("true");
+    expect(document.getElementById("streak-counter")?.textContent).toBe("STREAK 3");
+
+    // Further input must stay inert — the puzzle already ended today.
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.getElementById("sweeps-value")?.textContent).toBe("2");
   });
 
   it("winning reveals a share button that copies the result and confirms briefly", async () => {
