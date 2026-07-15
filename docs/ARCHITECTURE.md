@@ -99,8 +99,16 @@ npm run build         # static build into web/dist/ (subpath-relative)
 npm run preview       # serve the built dist/
 npm run lint
 npm test              # vitest
+npx vitest run --coverage   # v8 coverage report over src/**/*.ts
 ```
 
 `web/src/wasm/` is generated and gitignored — always run
 `npm run build:wasm` (or `npm run dev` / `npm run build`, which do it
 automatically) after any change under `crate/`.
+
+Both stacks pair example-based tests with property-based tests over
+the actual pure-logic contracts: `crate/src/{rng,puzzle}.rs` use
+`proptest` (arbitrary seed strings, arbitrary date strings) and
+`web/test/{spectrum,date,storage}.test.ts` use `fast-check` (arbitrary
+emitter layouts, cursor positions, and timestamps). Both are
+dev-only dependencies with no runtime footprint.
