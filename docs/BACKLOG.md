@@ -48,7 +48,7 @@ The playable heart of the game: a real puzzle, sweepable, lockable.
 Turns "find the signal" into a legible deduction game, and gives the win
 and loss states the weight the wow moment earned.
 
-- [ ] **2.1 Property hint reveal on decoy hit**
+- [x] **2.1 Property hint reveal on decoy hit**
   - Hitting a decoy reveals which single property (frequency, duty
     cycle, or noise floor) does *not* match the real signal, shown as
     inline text near the waterfall.
