@@ -6,6 +6,8 @@
 
 use wasm_bindgen::prelude::*;
 
+mod rng;
+
 /// Confirms the WASM module loaded and can be called from JS.
 #[wasm_bindgen]
 pub fn greet() -> String {
