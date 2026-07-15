@@ -9,7 +9,7 @@ only once every acceptance criterion below it is verifiably true.
 
 The playable heart of the game: a real puzzle, sweepable, lockable.
 
-- [ ] **1.1 Sweep the waterfall and lock the hidden signal (WOW MOMENT)**
+- [x] **1.1 Sweep the waterfall and lock the hidden signal (WOW MOMENT)**
   - Dragging/moving the cursor across the frequency band paints a new
     row into the waterfall canvas each animation frame at the current
     sweep position.
@@ -20,7 +20,7 @@ The playable heart of the game: a real puzzle, sweepable, lockable.
     lock, and the locked state persists — further sweeping does not
     un-lock — until the puzzle resets for a new day.
 
-- [ ] **1.2 Deterministic daily puzzle generation**
+- [x] **1.2 Deterministic daily puzzle generation**
   - Given the same UTC date string, the Rust core returns the same
     hidden signal (frequency, duty cycle, noise floor) and decoy set on
     every call — covered by a unit test seeding two calls with the same
@@ -29,14 +29,14 @@ The playable heart of the game: a real puzzle, sweepable, lockable.
     different hidden signal frequency than the date before it (guards
     against a seed function that degenerates toward a constant).
 
-- [ ] **1.3 Sweep budget and decoy feedback**
+- [x] **1.3 Sweep budget and decoy feedback**
   - Sweeping across a decoy's frequency range consumes one sweep from a
     finite budget and shows a distinguishing bump/flash cue (amber),
     visually distinct from the win flare (green).
   - When the sweep budget reaches zero without locking the real signal,
     a loss state is shown and no further sweep input is accepted.
 
-- [ ] **1.4 Design polish — waterfall chassis and controls**
+- [x] **1.4 Design polish — waterfall chassis and controls**
   - The waterfall canvas and control strip follow `docs/DESIGN.md`
     tokens (color, type, spacing); no default/unstyled browser button or
     slider is visible anywhere in the sweep UI.
