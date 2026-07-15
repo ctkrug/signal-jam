@@ -55,8 +55,12 @@ export class Waterfall {
     this.ctx.fillRect(0, 0, width, height);
   }
 
-  /** Marks the signal as locked: future rows render its bump full-bright. */
-  markLocked(): void {
+  /**
+   * Reveals the real signal's true frequency going forward, rendering
+   * its bump full-bright regardless of cursor position — used both on a
+   * win (it's locked) and on a loss (the puzzle reveals where it was).
+   */
+  reveal(): void {
     this.locked = true;
   }
 

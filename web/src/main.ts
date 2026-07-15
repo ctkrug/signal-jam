@@ -240,7 +240,7 @@ async function bootstrap(): Promise<void> {
       sweepOutcomes.push("lock");
       cursorEl.classList.remove("hit-decoy");
       cursorEl.classList.add("locked");
-      waterfall.markLocked();
+      waterfall.reveal();
       sfx.flareLock();
       ledEl.classList.add("won");
       const used = info.sweepBudget - session.sweepsRemaining();
