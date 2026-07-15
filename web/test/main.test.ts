@@ -223,6 +223,37 @@ describe("bootstrap", () => {
     expect(document.getElementById("sweeps-value")?.textContent).toBe("2");
   });
 
+  it("reloading after already losing today's puzzle restores the loss screen", async () => {
+    const today = getUtcDateString();
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({
+        [today]: {
+          won: false,
+          sweepsUsed: 4,
+          sweepBudget: 4,
+          outcomes: ["decoy", "decoy", "decoy", "decoy"],
+          streak: 1,
+        },
+      }),
+    );
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+    expect(document.getElementById("overlay-title")?.textContent).toBe("OUT OF SWEEPS");
+    expect(document.getElementById("overlay-title")?.classList.contains("loss")).toBe(true);
+    expect(document.getElementById("overlay-share")?.hidden).toBe(true);
+    expect(document.getElementById("sweep-track")?.getAttribute("aria-disabled")).toBe("true");
+    expect(document.getElementById("win-led")?.classList.contains("won")).toBe(false);
+
+    // A restored loss still shows the live countdown to tomorrow.
+    const countdownEl = document.getElementById("overlay-countdown");
+    expect(countdownEl?.hidden).toBe(false);
+    expect(countdownEl?.textContent).toMatch(/^Next puzzle in \d{2}:\d{2}:\d{2}$/);
+  });
+
   it("recovers from a hand-edited stored result missing the outcomes array", async () => {
     const today = getUtcDateString();
     localStorage.setItem(
