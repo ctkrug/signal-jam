@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import fc from "fast-check";
+import { getUtcDateString } from "../src/date";
 import {
   activeStreak,
   loadResult,
@@ -34,6 +36,20 @@ describe("previousUtcDateString", () => {
 
   it("handles a leap day correctly", () => {
     expect(previousUtcDateString("2028-03-01")).toBe("2028-02-29");
+  });
+
+  it("is always exactly one calendar day before, for any date in a 50-year span", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: Date.UTC(2000, 0, 2), max: Date.UTC(2050, 0, 1) }),
+        (ts) => {
+          const date = getUtcDateString(new Date(ts));
+          const prev = previousUtcDateString(date);
+          const expected = getUtcDateString(new Date(ts - 24 * 60 * 60 * 1000));
+          expect(prev).toBe(expected);
+        },
+      ),
+    );
   });
 });
 
