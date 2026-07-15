@@ -151,6 +151,45 @@ describe("bootstrap", () => {
     expect(document.getElementById("win-led")?.classList.contains("won")).toBe(true);
   });
 
+  it("winning reveals a share button that copies the result and confirms briefly", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const shareButton = document.getElementById("overlay-share") as HTMLButtonElement;
+    expect(shareButton.hidden).toBe(false);
+
+    shareButton.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Signal Jam Day"));
+    expect(shareButton.textContent).toBe("Copied!");
+  });
+
+  it("hitting a decoy without winning keeps the share button hidden", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 40, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("overlay-share")?.hidden).toBe(true);
+  });
+
   it("hitting a decoy flashes the cursor and decrements the sweeps readout", async () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -241,6 +280,60 @@ describe("pure helpers", () => {
     const { formatHint } = await import("../src/main.ts");
     expect(formatHint(1, "dutyCycle")).toBe("DECOY 1 — duty cycle doesn't match");
     expect(formatHint(3, "noiseFloor")).toBe("DECOY 3 — noise floor doesn't match");
+  });
+
+  it("buildShareText renders squares in outcome order, padded to sweepBudget + 1", async () => {
+    const { buildShareText } = await import("../src/main.ts");
+    expect(buildShareText(5, ["decoy", "lock"], 4)).toBe(
+      "Signal Jam Day 5\n🟧🟩⬛⬛⬛\n1/4 sweeps",
+    );
+  });
+
+  it("buildShareText handles an immediate lock with zero decoy hits", async () => {
+    const { buildShareText } = await import("../src/main.ts");
+    expect(buildShareText(1, ["lock"], 4)).toBe("Signal Jam Day 1\n🟩⬛⬛⬛⬛\n0/4 sweeps");
+  });
+
+  it("buildShareText adds no padding when every sweep slot was used", async () => {
+    const { buildShareText } = await import("../src/main.ts");
+    expect(buildShareText(9, ["decoy", "decoy", "decoy", "decoy", "lock"], 4)).toBe(
+      "Signal Jam Day 9\n🟧🟧🟧🟧🟩\n4/4 sweeps",
+    );
+  });
+
+  it("buildShareText never leaks the signal's actual frequency/duty/noise", async () => {
+    const { buildShareText } = await import("../src/main.ts");
+    const text = buildShareText(2, ["decoy", "lock"], 4);
+    expect(text).not.toMatch(/\d+\.\d+\s*MHz/);
+  });
+
+  it("copyToClipboard uses the async Clipboard API when available", async () => {
+    const { copyToClipboard } = await import("../src/main.ts");
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+
+    await expect(copyToClipboard("hello")).resolves.toBe(true);
+    expect(writeText).toHaveBeenCalledWith("hello");
+  });
+
+  it("copyToClipboard falls back to execCommand when the Clipboard API is unavailable", async () => {
+    const { copyToClipboard } = await import("../src/main.ts");
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+    const execCommand = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommand;
+
+    await expect(copyToClipboard("hello")).resolves.toBe(true);
+    expect(execCommand).toHaveBeenCalledWith("copy");
+  });
+
+  it("copyToClipboard resolves false instead of throwing when every path fails", async () => {
+    const { copyToClipboard } = await import("../src/main.ts");
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+    document.execCommand = vi.fn(() => {
+      throw new Error("denied");
+    });
+
+    await expect(copyToClipboard("hello")).resolves.toBe(false);
   });
 
   it("formatPercentReadout renders a percentage or a blank state for null", async () => {
