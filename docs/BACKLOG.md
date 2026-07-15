@@ -92,7 +92,7 @@ Makes it a *daily* habit instead of a one-off toy.
   - Toggling mute updates a `localStorage` flag; reloading the page
     preserves the mute state and suppresses all SFX while muted.
 
-- [ ] **3.3 Design polish — win/loss overlays and result grid**
+- [x] **3.3 Design polish — win/loss overlays and result grid**
   - Win and loss overlays follow `docs/DESIGN.md` (surface tokens,
     glow/shadow treatment, 160ms motion) and are dismissible via
     keyboard (Escape or a focused close control).
