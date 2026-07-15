@@ -206,6 +206,28 @@ describe("bootstrap", () => {
     expect(document.getElementById("sweeps-value")?.textContent).toBe("2");
   });
 
+  it("recovers from a hand-edited stored result missing the outcomes array", async () => {
+    const today = getUtcDateString();
+    localStorage.setItem(
+      "signal-jam:results",
+      JSON.stringify({
+        [today]: { won: true, sweepsUsed: 1, sweepBudget: 4, streak: 2 },
+      }),
+    );
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+
+    // Bootstrap must finish wiring input handlers despite the corrupt
+    // record — the mute button still has to respond.
+    const muteButton = document.getElementById("mute-button")!;
+    muteButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(muteButton.getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("winning reveals a share button that copies the result and confirms briefly", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
