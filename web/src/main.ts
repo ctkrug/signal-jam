@@ -1,5 +1,5 @@
 import init, { PuzzleSession } from "./wasm/signal_jam_core.js";
-import { getUtcDateString } from "./date";
+import { formatCountdown, getUtcDateString, msUntilNextUtcDay } from "./date";
 import { Waterfall } from "./waterfall";
 import { SfxPlayer } from "./audio";
 import { findHoveredEmitter } from "./spectrum";
@@ -146,6 +146,7 @@ async function bootstrap(): Promise<void> {
   const overlayEl = requireElement<HTMLElement>("result-overlay");
   const overlayTitleEl = requireElement<HTMLElement>("overlay-title");
   const overlayBodyEl = requireElement<HTMLElement>("overlay-body");
+  const overlayCountdownEl = requireElement<HTMLElement>("overlay-countdown");
   const overlayActionEl = requireElement<HTMLButtonElement>("overlay-action");
   const overlayShareEl = requireElement<HTMLButtonElement>("overlay-share");
 
@@ -172,8 +173,28 @@ async function bootstrap(): Promise<void> {
     let cursorFrequency: number | null = null;
     let resultShown = false;
 
+    let countdownIntervalId: ReturnType<typeof window.setInterval> | null = null;
+
+    const stopCountdown = (): void => {
+      if (countdownIntervalId !== null) {
+        window.clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
+      }
+      overlayCountdownEl.hidden = true;
+    };
+
+    const startCountdown = (): void => {
+      const tick = (): void => {
+        overlayCountdownEl.textContent = `Next puzzle in ${formatCountdown(msUntilNextUtcDay())}`;
+      };
+      overlayCountdownEl.hidden = false;
+      tick();
+      countdownIntervalId = window.setInterval(tick, 1000);
+    };
+
     const closeOverlay = (): void => {
       overlayEl.hidden = true;
+      stopCountdown();
     };
 
     const showOverlay = (opts: {
@@ -182,6 +203,7 @@ async function bootstrap(): Promise<void> {
       actionLabel: string;
       lossVariant: boolean;
       shareText?: string;
+      showCountdown?: boolean;
     }): void => {
       overlayTitleEl.textContent = opts.title;
       overlayTitleEl.classList.toggle("loss", opts.lossVariant);
@@ -191,6 +213,12 @@ async function bootstrap(): Promise<void> {
       overlayShareEl.textContent = "Copy result";
       overlayEl.hidden = false;
       overlayActionEl.focus();
+
+      if (opts.showCountdown) {
+        startCountdown();
+      } else {
+        stopCountdown();
+      }
 
       if (opts.shareText !== undefined) {
         const shareText = opts.shareText;
@@ -256,13 +284,15 @@ async function bootstrap(): Promise<void> {
 
     const onExhausted = (): void => {
       resultShown = true;
+      waterfall.reveal();
       sfx.loseTone();
       announce("Out of sweeps. Signal not found.");
       showOverlay({
         title: "OUT OF SWEEPS",
         lossVariant: true,
-        body: `The signal was at ${formatFrequencyReadout(info.signal.frequency)}. Come back tomorrow for a new puzzle.`,
+        body: `The signal was at ${formatFrequencyReadout(info.signal.frequency)}.`,
         actionLabel: "Close",
+        showCountdown: true,
       });
     };
 
