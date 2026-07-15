@@ -59,6 +59,7 @@ const APP_SHELL = `
       <span class="led" id="win-led"></span>
       <h1 class="wordmark">SIGNAL JAM</h1>
     </div>
+    <div class="streak-counter" id="streak-counter" hidden></div>
     <div class="day-counter" id="day-counter">DAY —</div>
   </header>
   <main class="chassis">
