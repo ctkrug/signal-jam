@@ -154,6 +154,18 @@ mod tests {
     }
 
     #[test]
+    fn frequency_exactly_at_decoy_tolerance_boundary_hits() {
+        // Same inclusive-boundary contract as the signal's lock window,
+        // pinned the same way: decoy at 0.0 so the distance calculation
+        // is exact, no add-then-subtract rounding.
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.0], 1));
+        assert_eq!(
+            engine.sweep(DECOY_TOLERANCE),
+            SweepEvent::DecoyHit { index: 0 }
+        );
+    }
+
+    #[test]
     fn lingering_on_the_same_decoy_does_not_double_charge() {
         let mut engine = Engine::new(test_puzzle(0.5, &[0.2], 3));
         assert_eq!(engine.sweep(0.2), SweepEvent::DecoyHit { index: 0 });
