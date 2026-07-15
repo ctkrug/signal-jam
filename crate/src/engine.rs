@@ -117,3 +117,104 @@ impl Engine {
         &self.puzzle
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::puzzle::Emitter;
+
+    fn emitter(frequency: f64) -> Emitter {
+        Emitter {
+            frequency,
+            duty_cycle: 0.5,
+            noise_floor: 0.3,
+        }
+    }
+
+    fn test_puzzle(signal_freq: f64, decoy_freqs: &[f64], budget: u32) -> Puzzle {
+        Puzzle {
+            date: "test".to_string(),
+            signal: emitter(signal_freq),
+            decoys: decoy_freqs.iter().map(|&f| emitter(f)).collect(),
+            sweep_budget: budget,
+        }
+    }
+
+    #[test]
+    fn crossing_a_decoy_costs_one_sweep() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.2], 1));
+        assert_eq!(engine.sweep(0.2), SweepEvent::DecoyHit { index: 0 });
+        assert_eq!(engine.sweeps_remaining(), 0);
+    }
+
+    #[test]
+    fn lingering_on_the_same_decoy_does_not_double_charge() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.2], 3));
+        assert_eq!(engine.sweep(0.2), SweepEvent::DecoyHit { index: 0 });
+        assert_eq!(engine.sweep(0.201), SweepEvent::None);
+        assert_eq!(engine.sweep(0.199), SweepEvent::None);
+        assert_eq!(engine.sweeps_remaining(), 2);
+    }
+
+    #[test]
+    fn revisiting_a_spent_decoy_after_leaving_is_free() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.2], 3));
+        assert_eq!(engine.sweep(0.2), SweepEvent::DecoyHit { index: 0 });
+        assert_eq!(engine.sweep(0.9), SweepEvent::None); // leave into open noise
+        assert_eq!(engine.sweep(0.2), SweepEvent::None); // re-enter, already spent
+        assert_eq!(engine.sweeps_remaining(), 2);
+    }
+
+    #[test]
+    fn crossing_the_signal_locks_and_reports_its_exact_frequency() {
+        let mut engine = Engine::new(test_puzzle(0.503, &[0.2], 3));
+        assert_eq!(engine.sweep(0.503), SweepEvent::Locked { frequency: 0.503 });
+        assert!(engine.is_locked());
+    }
+
+    #[test]
+    fn lock_persists_and_further_sweeps_are_ignored() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.2], 3));
+        engine.sweep(0.5);
+        assert!(engine.is_locked());
+        assert_eq!(engine.sweep(0.2), SweepEvent::Ignored);
+        assert_eq!(engine.sweep(0.9), SweepEvent::Ignored);
+        assert!(engine.is_locked());
+        assert_eq!(engine.sweeps_remaining(), 3);
+    }
+
+    #[test]
+    fn budget_exhaustion_without_lock_blocks_further_input() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[0.2, 0.4], 1));
+        engine.sweep(0.2);
+        assert!(engine.is_exhausted());
+        assert_eq!(engine.sweep(0.4), SweepEvent::Exhausted);
+        // even sweeping straight across the real signal no longer wins
+        assert_eq!(engine.sweep(0.5), SweepEvent::Exhausted);
+        assert!(!engine.is_locked());
+    }
+
+    #[test]
+    fn frequency_just_inside_tolerance_hits_just_outside_misses() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[], 3));
+        let just_inside = 0.5 + LOCK_TOLERANCE - 1e-9;
+        assert_eq!(
+            engine.sweep(just_inside),
+            SweepEvent::Locked { frequency: 0.5 }
+        );
+
+        let mut engine = Engine::new(test_puzzle(0.5, &[], 3));
+        let just_outside = 0.5 + LOCK_TOLERANCE + 1e-9;
+        assert_eq!(engine.sweep(just_outside), SweepEvent::None);
+    }
+
+    #[test]
+    fn puzzle_with_no_decoys_never_drains_budget_on_open_noise() {
+        let mut engine = Engine::new(test_puzzle(0.5, &[], 4));
+        for f in [0.1, 0.15, 0.2, 0.9] {
+            assert_eq!(engine.sweep(f), SweepEvent::None);
+        }
+        assert_eq!(engine.sweeps_remaining(), 4);
+        assert!(!engine.is_exhausted());
+    }
+}
