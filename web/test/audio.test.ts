@@ -1,5 +1,51 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SfxPlayer } from "../src/audio";
+
+function fakeAudioParam() {
+  return {
+    setValueAtTime: vi.fn(),
+    linearRampToValueAtTime: vi.fn(),
+    exponentialRampToValueAtTime: vi.fn(),
+  };
+}
+
+class FakeOscillator {
+  type = "sine";
+  frequency = fakeAudioParam();
+  connect = vi.fn().mockReturnThis();
+  start = vi.fn();
+  stop = vi.fn();
+}
+
+class FakeGain {
+  gain = fakeAudioParam();
+  connect = vi.fn().mockReturnThis();
+}
+
+class FakeBufferSource {
+  buffer: unknown;
+  connect = vi.fn().mockReturnThis();
+  start = vi.fn();
+}
+
+class FakeAudioContext {
+  static instanceCount = 0;
+  state = "running";
+  currentTime = 0;
+  sampleRate = 44100;
+  destination = {};
+  resume = vi.fn().mockResolvedValue(undefined);
+  createOscillator = vi.fn(() => new FakeOscillator());
+  createGain = vi.fn(() => new FakeGain());
+  createBufferSource = vi.fn(() => new FakeBufferSource());
+  createBuffer = vi.fn((_channels: number, length: number) => ({
+    getChannelData: () => new Float32Array(length),
+  }));
+
+  constructor() {
+    FakeAudioContext.instanceCount += 1;
+  }
+}
 
 describe("SfxPlayer", () => {
   beforeEach(() => {
@@ -52,5 +98,88 @@ describe("SfxPlayer", () => {
     const player = new SfxPlayer();
     player.setMuted(true);
     expect(() => player.flareLock()).not.toThrow();
+  });
+});
+
+describe("SfxPlayer with a WebAudio implementation available", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    FakeAudioContext.instanceCount = 0;
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("lazily creates exactly one AudioContext across multiple calls", () => {
+    const player = new SfxPlayer();
+    expect(FakeAudioContext.instanceCount).toBe(0); // not yet created
+
+    player.sweepTick(0.5);
+    expect(FakeAudioContext.instanceCount).toBe(1);
+
+    player.decoyBump();
+    player.winJingle();
+    // Constructing a new context per call (rather than reusing one)
+    // would violate the documented "lazy, first-call" contract.
+    expect(FakeAudioContext.instanceCount).toBe(1);
+  });
+
+  it("decoyBump wires an oscillator through gain to the destination and starts it", () => {
+    const player = new SfxPlayer();
+    player.decoyBump();
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    expect(ctx.createBufferSource).toHaveBeenCalled();
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    const osc = ctx.createOscillator.mock.results[0]?.value as FakeOscillator;
+    expect(osc.start).toHaveBeenCalled();
+  });
+
+  it("winJingle plays three ascending notes", () => {
+    const player = new SfxPlayer();
+    player.winJingle();
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(3);
+  });
+
+  it("sweepTick is rate-throttled: a second call within the throttle window is silent", () => {
+    const player = new SfxPlayer();
+    const now = vi.spyOn(performance, "now");
+
+    now.mockReturnValue(1000);
+    player.sweepTick(0.5);
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(1010); // well under the 70ms throttle window
+    player.sweepTick(0.6);
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(1200); // past the throttle window
+    player.sweepTick(0.7);
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(2);
+  });
+
+  it("a muted player never touches the AudioContext at all", () => {
+    const player = new SfxPlayer();
+    player.setMuted(true);
+    player.sweepTick(0.5);
+    player.decoyBump();
+    player.flareLock();
+    player.winJingle();
+    player.loseTone();
+    expect((player as unknown as { ctx: FakeAudioContext | null }).ctx).toBeNull();
+  });
+
+  it("resumes a suspended context on the next sound", () => {
+    const player = new SfxPlayer();
+    player.decoyBump(); // creates the context
+    const ctx = (player as unknown as { ctx: FakeAudioContext }).ctx;
+    ctx.state = "suspended";
+
+    player.decoyBump();
+    expect(ctx.resume).toHaveBeenCalled();
   });
 });
