@@ -17,6 +17,8 @@ import {
 const LAUNCH_DATE_UTC_MS = Date.UTC(2026, 6, 15);
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const KEYBOARD_STEP = 0.01;
+const LOCK_SPARK_COUNT = 8;
+const LOCK_CELEBRATION_LIFETIME_MS = 700;
 
 interface EmitterInfo {
   frequency: number;
@@ -125,6 +127,42 @@ export function frequencyFromPosition(trackRect: { left: number; width: number }
   if (trackRect.width <= 0) return 0;
   const ratio = (clientX - trackRect.left) / trackRect.width;
   return Math.min(1, Math.max(0, ratio));
+}
+
+/** Whether the user has asked the OS to minimize non-essential motion. */
+export function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * Fires the win flourish at the locked frequency: a phosphor pulse ring
+ * plus a radial spark burst, both positioned on the sweep track at
+ * `leftPercent`. Purely decorative and skipped entirely under
+ * `prefers-reduced-motion`; each node self-removes so nothing leaks.
+ */
+export function spawnLockCelebration(track: HTMLElement, leftPercent: number): void {
+  if (prefersReducedMotion()) return;
+
+  const removeAfterLifetime = (node: HTMLElement): void => {
+    window.setTimeout(() => node.remove(), LOCK_CELEBRATION_LIFETIME_MS);
+  };
+
+  const ring = document.createElement("div");
+  ring.className = "lock-pulse";
+  ring.style.left = `${leftPercent}%`;
+  ring.setAttribute("aria-hidden", "true");
+  track.appendChild(ring);
+  removeAfterLifetime(ring);
+
+  for (let i = 0; i < LOCK_SPARK_COUNT; i++) {
+    const spark = document.createElement("span");
+    spark.className = "spark";
+    spark.style.left = `${leftPercent}%`;
+    spark.style.setProperty("--angle", `${(i / LOCK_SPARK_COUNT) * 360}deg`);
+    spark.setAttribute("aria-hidden", "true");
+    track.appendChild(spark);
+    removeAfterLifetime(spark);
+  }
 }
 
 function requireElement<T extends HTMLElement>(id: string): T {
@@ -287,6 +325,8 @@ async function bootstrap(): Promise<void> {
       cursorEl.classList.add("locked");
       waterfall.reveal();
       sfx.flareLock();
+      sfx.winJingle();
+      spawnLockCelebration(sweepTrackEl, (cursorFrequency ?? info.signal.frequency) * 100);
       ledEl.classList.add("won");
       const used = info.sweepBudget - session.sweepsRemaining();
       const streak = nextStreak(yesterdayResult, true);

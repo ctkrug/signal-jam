@@ -131,6 +131,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.resetModules();
   forcePuzzleInfoFailure = false;
 });
@@ -169,6 +170,48 @@ describe("bootstrap", () => {
     expect(document.getElementById("result-overlay")?.hidden).toBe(false);
     expect(document.getElementById("overlay-title")?.textContent).toBe("SIGNAL LOCKED");
     expect(document.getElementById("win-led")?.classList.contains("won")).toBe(true);
+  });
+
+  it("locking the signal plays the win jingle and spawns the celebration flourish", async () => {
+    // Import audio in this (post-reset) module registry so the spy lands on
+    // the same SfxPlayer class main.ts instantiates.
+    const { SfxPlayer } = await import("../src/audio");
+    const winJingle = vi.spyOn(SfxPlayer.prototype, "winJingle");
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(winJingle).toHaveBeenCalledTimes(1);
+    // matchMedia is absent in jsdom, so motion is allowed and the flourish renders.
+    expect(track.querySelectorAll(".lock-pulse")).toHaveLength(1);
+    expect(track.querySelectorAll(".spark")).toHaveLength(8);
+  });
+
+  it("suppresses the lock flourish under prefers-reduced-motion", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true }) as unknown as MediaQueryList),
+    );
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 100, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The overlay (function) still shows; only the motion-heavy flourish is dropped.
+    expect(document.getElementById("result-overlay")?.hidden).toBe(false);
+    expect(track.querySelectorAll(".lock-pulse")).toHaveLength(0);
+    expect(track.querySelectorAll(".spark")).toHaveLength(0);
   });
 
   it("locking the signal persists today's result and shows a streak badge", async () => {
