@@ -25,17 +25,20 @@ different mechanic, it's visually striking (a live scrolling waterfall
 is satisfying to watch even before you know how to play), and it's a
 natural fit for a tight, replayable 2-minute session.
 
-## Planned features
+## Features
 
 - Daily deterministic puzzle (same seed for everyone, same day)
 - Live-scrolling waterfall display rendered on `<canvas>`, driven by a
   Rust/WASM simulation core for 60fps sweep rendering
 - Spectrum mechanics: hidden signal defined by frequency, duty cycle, and
-  noise floor; decoys share a subset of those properties
+  noise floor; decoys share a subset of those properties, and hitting one
+  reveals which property gave it away
 - Limited sweeps per puzzle with a snap/lock/chime moment when the cursor
   crosses the real signal
-- Win/lose summary with a shareable emoji-style result grid
-- Local persistence of streak + stats (no accounts, no backend)
+- Win/lose overlay with a shareable emoji-style result grid, and a live
+  countdown to the next puzzle on a loss
+- Local persistence of daily results and a win streak, mute toggle
+  included (no accounts, no backend)
 
 ## Stack
 
@@ -63,9 +66,10 @@ See `docs/ARCHITECTURE.md` for the module map and data flow, and
 
 ## Status
 
-The core sweep loop is playable: deterministic daily puzzle, live
-waterfall, decoy feedback, and the flare/lock/chime win moment. See
-`docs/VISION.md` for the design and `docs/BACKLOG.md` for what's left.
+The full daily loop is playable end to end: deterministic puzzle, live
+waterfall, decoy hints, the flare/lock/chime win moment, win/loss
+overlays with share text, and streak/mute persistence across reloads.
+See `docs/VISION.md` for the design and `docs/BACKLOG.md` for what's left.
 
 ## License
 
