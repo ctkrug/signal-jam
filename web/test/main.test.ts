@@ -13,8 +13,8 @@ class FakePuzzleSession {
       sweepBudget: 4,
       lockTolerance: 0.012,
       decoyTolerance: 0.015,
-      signal: { frequency: 0.5, dutyCycle: 0.5, noiseFloor: 0.5 },
-      decoys: [{ frequency: 0.2, dutyCycle: 0.5, noiseFloor: 0.5, mismatch: "dutyCycle" }],
+      signal: { frequency: 0.5, dutyCycle: 0.6, noiseFloor: 0.7 },
+      decoys: [{ frequency: 0.2, dutyCycle: 0.3, noiseFloor: 0.2, mismatch: "dutyCycle" }],
     });
   }
 
@@ -188,6 +188,37 @@ describe("bootstrap", () => {
     expect(chips[0]?.textContent).toContain("duty cycle");
     expect(document.getElementById("hints-panel")?.classList.contains("has-hints")).toBe(true);
   });
+
+  it("live readout shows the hovered emitter's duty/noise and blanks over open noise", async () => {
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const track = document.getElementById("sweep-track")!;
+
+    // 0.53 * 200px — near the signal (0.5) but outside its lock tolerance.
+    track.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 106, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.getElementById("duty-value")?.textContent).toBe("60%");
+    expect(document.getElementById("noise-value")?.textContent).toBe("70%");
+
+    // 0.23 * 200px — near the decoy (0.2) but outside its hit tolerance.
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 46, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.getElementById("duty-value")?.textContent).toBe("30%");
+    expect(document.getElementById("noise-value")?.textContent).toBe("20%");
+
+    // 0.65 * 200px — open noise, away from every emitter's reveal radius.
+    track.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 130, pointerId: 1, bubbles: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.getElementById("duty-value")?.textContent).toBe("– –");
+    expect(document.getElementById("noise-value")?.textContent).toBe("– –");
+  });
 });
 
 describe("pure helpers", () => {
@@ -209,6 +240,14 @@ describe("pure helpers", () => {
     const { formatHint } = await import("../src/main.ts");
     expect(formatHint(1, "dutyCycle")).toBe("DECOY 1 — duty cycle doesn't match");
     expect(formatHint(3, "noiseFloor")).toBe("DECOY 3 — noise floor doesn't match");
+  });
+
+  it("formatPercentReadout renders a percentage or a blank state for null", async () => {
+    const { formatPercentReadout } = await import("../src/main.ts");
+    expect(formatPercentReadout(null)).toBe("– –");
+    expect(formatPercentReadout(0)).toBe("0%");
+    expect(formatPercentReadout(0.6)).toBe("60%");
+    expect(formatPercentReadout(1)).toBe("100%");
   });
 
   it("frequencyFromPosition clamps to [0, 1] and handles a zero-width track", async () => {
