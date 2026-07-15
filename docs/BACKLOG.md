@@ -80,7 +80,7 @@ and loss states the weight the wow moment earned.
 
 Makes it a *daily* habit instead of a one-off toy.
 
-- [ ] **3.1 Streak and result persistence**
+- [x] **3.1 Streak and result persistence**
   - Completing a puzzle (win or loss) writes today's UTC-date result to
     `localStorage`; reloading the page the same day shows the completed
     result screen instead of a fresh puzzle.
