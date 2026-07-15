@@ -70,6 +70,10 @@ describe("findHoveredEmitter", () => {
     expect(findHoveredEmitter(0.5, signal, decoys, 0)).toEqual({ ...signal, isSignal: true });
     expect(findHoveredEmitter(0.51, signal, decoys, 0)).toBeNull();
   });
+
+  it("treats a NaN cursor frequency as hovering nothing", () => {
+    expect(findHoveredEmitter(NaN, signal, decoys)).toBeNull();
+  });
 });
 
 describe("computeRowAmplitudes", () => {
@@ -136,5 +140,24 @@ describe("computeRowAmplitudes", () => {
     );
     expect(result.green).toHaveLength(1);
     expect(result.amber[0]).toBe(0);
+  });
+
+  it("never produces NaN amplitudes when the cursor frequency is NaN", () => {
+    // Defense in depth: nothing in main.ts can currently hand this
+    // function a NaN cursor, but a pure render function shouldn't trust
+    // that — a NaN here would silently corrupt every bin's fillStyle.
+    const { green, amber } = computeRowAmplitudes(
+      {
+        cursorFrequency: NaN,
+        signal: { frequency: 0.5, dutyCycle: 0.9 },
+        decoys: [{ frequency: 0.2, dutyCycle: 0.9 }],
+        locked: false,
+        binCount: 8,
+      },
+      noNoise,
+    );
+    for (const v of [...green, ...amber]) {
+      expect(Number.isNaN(v)).toBe(false);
+    }
   });
 });
