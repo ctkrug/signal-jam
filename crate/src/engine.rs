@@ -97,7 +97,7 @@ impl Engine {
         self.puzzle
             .decoys
             .iter()
-            .position(|d| (frequency - d.frequency).abs() <= DECOY_TOLERANCE)
+            .position(|d| (frequency - d.emitter.frequency).abs() <= DECOY_TOLERANCE)
             .map(Target::Decoy)
     }
 
@@ -121,7 +121,7 @@ impl Engine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::puzzle::Emitter;
+    use crate::puzzle::{Decoy, Emitter, Property};
 
     fn emitter(frequency: f64) -> Emitter {
         Emitter {
@@ -135,7 +135,13 @@ mod tests {
         Puzzle {
             date: "test".to_string(),
             signal: emitter(signal_freq),
-            decoys: decoy_freqs.iter().map(|&f| emitter(f)).collect(),
+            decoys: decoy_freqs
+                .iter()
+                .map(|&f| Decoy {
+                    emitter: emitter(f),
+                    mismatch: Property::DutyCycle,
+                })
+                .collect(),
             sweep_budget: budget,
         }
     }
