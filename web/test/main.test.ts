@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getUtcDateString } from "../src/date";
 
+let forcePuzzleInfoFailure = false;
+
 class FakePuzzleSession {
   private locked = false;
   private exhausted = false;
@@ -9,6 +11,9 @@ class FakePuzzleSession {
   constructor(public date: string) {}
 
   puzzleInfo(): string {
+    if (forcePuzzleInfoFailure) {
+      return "{not valid json";
+    }
     return JSON.stringify({
       date: this.date,
       sweepBudget: 4,
@@ -127,9 +132,21 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.resetModules();
+  forcePuzzleInfoFailure = false;
 });
 
 describe("bootstrap", () => {
+  it("degrades to an OFFLINE state instead of crashing when the wasm core returns malformed data", async () => {
+    forcePuzzleInfoFailure = true;
+
+    await import("../src/main.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById("day-counter")?.textContent).toBe("OFFLINE");
+    expect(document.getElementById("sweep-track")?.getAttribute("aria-disabled")).toBe("true");
+    expect(document.getElementById("status-live")?.textContent).toContain("Reload the page");
+  });
+
   it("initializes the console: day counter, sweeps readout, and mute state", async () => {
     await import("../src/main.ts");
     await new Promise((resolve) => setTimeout(resolve, 0));
