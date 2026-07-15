@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fc from "fast-check";
 import { formatCountdown, getUtcDateString, msUntilNextUtcDay } from "../src/date";
 
 describe("getUtcDateString", () => {
@@ -65,5 +66,51 @@ describe("formatCountdown", () => {
 
   it("handles durations past 24 hours without wrapping the hour field", () => {
     expect(formatCountdown(25 * 60 * 60 * 1000)).toBe("25:00:00");
+  });
+});
+
+describe("date property tests", () => {
+  // Roughly years 2000-2050, any millisecond within that span.
+  const anyTimestamp = fc.integer({ min: Date.UTC(2000, 0, 1), max: Date.UTC(2050, 0, 1) });
+
+  it("msUntilNextUtcDay always returns a value in (0, 24h]", () => {
+    fc.assert(
+      fc.property(anyTimestamp, (ts) => {
+        const ms = msUntilNextUtcDay(new Date(ts));
+        expect(ms).toBeGreaterThan(0);
+        expect(ms).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+      }),
+    );
+  });
+
+  it("getUtcDateString followed by re-parsing round-trips to the same UTC day", () => {
+    fc.assert(
+      fc.property(anyTimestamp, (ts) => {
+        const date = new Date(ts);
+        const dateString = getUtcDateString(date);
+        const reparsed = new Date(`${dateString}T00:00:00Z`);
+        expect(reparsed.getUTCFullYear()).toBe(date.getUTCFullYear());
+        expect(reparsed.getUTCMonth()).toBe(date.getUTCMonth());
+        expect(reparsed.getUTCDate()).toBe(date.getUTCDate());
+      }),
+    );
+  });
+
+  it("formatCountdown never emits a negative or malformed string for any non-negative input", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 1000 * 60 * 60 * 24 * 400 }), (ms) => {
+        expect(formatCountdown(ms)).toMatch(/^\d{2,}:\d{2}:\d{2}$/);
+      }),
+    );
+  });
+
+  it("formatCountdown is monotonically non-decreasing in whole seconds", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 1_000_000 }), (ms) => {
+        const a = formatCountdown(ms);
+        const b = formatCountdown(ms + 1000);
+        expect(b >= a).toBe(true);
+      }),
+    );
   });
 });
