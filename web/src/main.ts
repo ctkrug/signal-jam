@@ -14,13 +14,29 @@ interface EmitterInfo {
   noiseFloor: number;
 }
 
+type Mismatch = "dutyCycle" | "noiseFloor";
+
+interface DecoyInfo extends EmitterInfo {
+  mismatch: Mismatch;
+}
+
 interface PuzzleInfo {
   date: string;
   sweepBudget: number;
   lockTolerance: number;
   decoyTolerance: number;
   signal: EmitterInfo;
-  decoys: EmitterInfo[];
+  decoys: DecoyInfo[];
+}
+
+const MISMATCH_LABEL: Record<Mismatch, string> = {
+  dutyCycle: "duty cycle",
+  noiseFloor: "noise floor",
+};
+
+/** Human-readable clue text for a decoy's revealed mismatch property. */
+export function formatHint(decoyNumber: number, mismatch: Mismatch): string {
+  return `DECOY ${decoyNumber} — ${MISMATCH_LABEL[mismatch]} doesn't match`;
 }
 
 type SweepEventJson =
@@ -66,6 +82,8 @@ async function bootstrap(): Promise<void> {
   const chassisEl = document.querySelector<HTMLElement>(".chassis");
   const sweepTrackEl = requireElement<HTMLElement>("sweep-track");
   const cursorEl = requireElement<HTMLElement>("sweep-cursor");
+  const hintsPanelEl = requireElement<HTMLElement>("hints-panel");
+  const hintsListEl = requireElement<HTMLElement>("hints-list");
   const sweepsValueEl = requireElement<HTMLElement>("sweeps-value");
   const freqValueEl = requireElement<HTMLElement>("freq-value");
   const muteButtonEl = requireElement<HTMLButtonElement>("mute-button");
@@ -114,10 +132,27 @@ async function bootstrap(): Promise<void> {
       overlayActionEl.focus();
     };
 
-    const onDecoyHit = (): void => {
+    const revealedHints = new Set<number>();
+
+    const revealHint = (index: number): void => {
+      if (revealedHints.has(index)) return;
+      revealedHints.add(index);
+
+      const decoy = info.decoys[index];
+      if (!decoy) return;
+
+      const chip = document.createElement("li");
+      chip.className = "hint-chip";
+      chip.textContent = formatHint(index + 1, decoy.mismatch);
+      hintsListEl.appendChild(chip);
+      hintsPanelEl.classList.add("has-hints");
+    };
+
+    const onDecoyHit = (index: number): void => {
       cursorEl.classList.add("hit-decoy");
       chassisEl?.classList.add("shake");
       sfx.decoyBump();
+      revealHint(index);
       announce(`Decoy detected. One sweep used, ${session.sweepsRemaining()} remaining.`);
       window.setTimeout(() => cursorEl.classList.remove("hit-decoy"), 160);
       window.setTimeout(() => chassisEl?.classList.remove("shake"), 90);
@@ -170,7 +205,7 @@ async function bootstrap(): Promise<void> {
 
       switch (event.kind) {
         case "decoyHit":
-          onDecoyHit();
+          onDecoyHit(event.index);
           if (session.isExhausted()) onExhausted();
           break;
         case "locked":
